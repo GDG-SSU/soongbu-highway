@@ -1,28 +1,7 @@
 console.log( window.innerWidth + " " + window.innerHeight );
 
 CreateAxis = function (scene) {
-	var colors = [ 0xff0000, 0x00ff00, 0x0000ff ];
-	var vectors = [
-		new THREE.Vector3(-1000, 0, 0),
-		new THREE.Vector3(1000, 0, 0),
-		new THREE.Vector3(0, -1000, 0),
-		new THREE.Vector3(0, 1000, 0),
-		new THREE.Vector3(0, 0, -1000),
-		new THREE.Vector3(0, 0, 1000)
-	];
-
-	for( var i = 0; i < colors.length; i ++ ) {
-		var axisMaterial = new THREE.LineBasicMaterial({
-			color: colors[i]
-		});
-
-		var axisGeometry = new THREE.Geometry();
-		axisGeometry.vertices.push(vectors[i*2]);
-		axisGeometry.vertices.push(vectors[i*2 + 1]);
-
-		var line = new THREE.Line( axisGeometry, axisMaterial );
-		scene.add( line );
-	};
+	scene.add( new THREE.AxisHelper(1000) );
 }
 
 CreateCube = function (scene) {
