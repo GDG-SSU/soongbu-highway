@@ -19,7 +19,7 @@ var camera = new THREE.PerspectiveCamera(
 	window.innerWidth / window.innerHeight, 
 	0.1, 
 	1000);
-camera.position.set( -15, 10, 5 );
+camera.position.set( 15, 15, 15 );
 camera.lookAt( scene.position );
 
 var renderer = new THREE.WebGLRenderer();
@@ -31,8 +31,13 @@ var light = new THREE.PointLight( 0xFFFF00 );
 light.position.set( 10, 10, 10 );
 scene.add( light );
 
+var light2 = new THREE.PointLight( 0xFFFF00 );
+light2.position.set( 0, 0, 0 );
+scene.add( light2 );
+
 CreateAxis( scene );
 cube = CreateCube( scene );
+cube.position.set( 5, 5, 5 );
 
 var render = function () {
 	requestAnimationFrame(render);
