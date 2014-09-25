@@ -110,6 +110,35 @@ StateManager.prototype = {
 };
 
 
+var scene, camera, clock, renderer;
+
+function Init () {
+	scene = new THREE.Scene();
+	camera = new THREE.PerspectiveCamera(
+		75, 
+		window.innerWidth / window.innerHeight, 
+		0.1, 
+		1000);
+	camera.position.set( 15, 15, 15 );
+	camera.lookAt( scene.position );
+
+	renderer = new THREE.WebGLRenderer();
+	renderer.setClearColor( 0xeeeeee, 1.0 ); // the default
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	document.body.appendChild(renderer.domElement);
+
+	var light = new THREE.PointLight( 0xFFFF00 );
+	light.position.set( 10, 10, 10 );
+	scene.add( light );
+
+	var light2 = new THREE.PointLight( 0xFFFF00 );
+	light2.position.set( 0, 0, 0 );
+	scene.add( light2 );
+
+
+	clock = new THREE.Clock();
+}
+
 console.log( window.innerWidth + " " + window.innerHeight );
 
 CreateAxis = function (scene) {
@@ -125,34 +154,13 @@ ProcessKeyInput = function (keyboard) {
 	}
 }
 
-var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(
-	75, 
-	window.innerWidth / window.innerHeight, 
-	0.1, 
-	1000);
-camera.position.set( 15, 15, 15 );
-camera.lookAt( scene.position );
 
-var renderer = new THREE.WebGLRenderer();
-renderer.setClearColor( 0xeeeeee, 1.0 ); // the default
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-var light = new THREE.PointLight( 0xFFFF00 );
-light.position.set( 10, 10, 10 );
-scene.add( light );
-
-var light2 = new THREE.PointLight( 0xFFFF00 );
-light2.position.set( 0, 0, 0 );
-scene.add( light2 );
-
+Init();
 CreateAxis(scene);
-
 
 var keyboard = new THREEx.KeyboardState();
 var stateManager = new StateManager();
-stateManager.SetState("StateFirst");
+stateManager.SetState("StateSecond");
 
 var render = function () {
 	requestAnimationFrame(render);
