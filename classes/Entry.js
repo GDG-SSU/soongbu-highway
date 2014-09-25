@@ -83,16 +83,18 @@ StateSecond.prototype.OnEnter = function () {
 StateSecond.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
 
-	this._player.position.z += 2 * dt;
+	this._player.position.z += 5 * dt;
 
 	this._genTimer += dt;
 	if( this._genTimer > 3.0 ) {
 		this._genTimer = 0;
 
-		var geometry = new THREE.CubeGeometry( 5, 5, 5 );
-		var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
+		var pos = this._player.position;
+
+		var geometry = new THREE.CubeGeometry( 3, 3, 3 );
+		var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
 		var mesh = new THREE.Mesh( geometry, material );
-		mesh.position.set( Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5 );
+		mesh.position.set( pos.x + THREE.Math.randFloat( -10, 10 ), pos.y, pos.z + 20 );
 		this._root.add( mesh );
 	}
 }
