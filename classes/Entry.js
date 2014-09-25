@@ -1,16 +1,128 @@
+// define State class
+function State () {
+	this._stateName = "";
+}
+
+State.prototype = {
+	OnEnter: function() {
+		this._root = new THREE.Object3D();
+		scene.add( this._root );
+	},
+
+	OnExit: function() {
+		scene.remove( this._root );
+	},
+
+	Update: function(dt) {
+
+	}
+};
+
+
+function StateFirst () {
+	this._stateName = "StateFirst";
+}
+
+StateFirst.prototype = new State();
+
+StateFirst.prototype.OnEnter = function () {
+	State.prototype.OnEnter.call( this );
+
+	var geometry = new THREE.CubeGeometry( 5, 5, 5 );
+	var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
+	var mesh = new THREE.Mesh( geometry, material );
+	this._root.add( mesh );
+	this._cube = mesh;
+}
+
+StateFirst.prototype.Update = function (dt) {
+	State.prototype.Update.call(this, dt);
+}
+
+
+function StateSecond () {
+	this._stateName = "StateSecond";
+}
+
+StateSecond.prototype = new State();
+
+StateSecond.prototype.OnEnter = function () {
+	State.prototype.OnEnter.call( this );
+
+	var geometry = new THREE.CubeGeometry( 5, 5, 5 );
+	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
+	var mesh = new THREE.Mesh( geometry, material );
+	this._root.add( mesh );
+	this._cube = mesh;
+}
+
+StateSecond.prototype.Update = function (dt) {
+	State.prototype.Update.call(this, dt);
+
+	this._cube.rotation.x += 0.01;
+	this._cube.rotation.y += 0.02;
+	this._cube.rotation.z += 0.03;
+}
+
+
+
+function StateManager() {
+	var _curr = undefined;
+}
+
+StateManager.prototype = {
+	SetState: function (state) {
+		if( this._curr === undefined ) {
+			var inst = this.InstantiateState(state);
+			inst.OnEnter();
+
+			this._curr = inst;
+			return;
+		}
+
+		if( this._curr.stateName === state ) {
+			return;
+		}
+
+		this._curr.OnExit();
+
+		var inst = this.InstantiateState(state);
+		inst.OnEnter();
+
+		this._curr = inst;
+	},
+
+	InstantiateState: function (stateName) {
+		var state;
+		if( stateName === "StateFirst" ) {
+			state = new StateFirst();
+		}
+		else if( stateName === "StateSecond" ) {
+			state = new StateSecond();
+		}
+
+		return state;
+	},
+
+	Update: function (dt) {
+		this._curr.Update( dt );
+	}
+};
+
+
 console.log( window.innerWidth + " " + window.innerHeight );
 
 CreateAxis = function (scene) {
 	scene.add( new THREE.AxisHelper(1000) );
 }
 
-CreateCube = function (scene) {
-	var geometry = new THREE.CubeGeometry( 5, 5, 5 );
-	var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
-	var mesh = new THREE.Mesh( geometry, material );
-	scene.add( mesh );
-
-	return mesh;
+ProcessKeyInput = function (keyboard) {
+	if( keyboard.pressed("1") ) {
+		stateManager.SetState("StateFirst");
+	}
+	else if( keyboard.pressed("2") ) {
+		stateManager.SetState("StateSecond");
+	}
 }
 
 var scene = new THREE.Scene();
@@ -35,16 +147,18 @@ var light2 = new THREE.PointLight( 0xFFFF00 );
 light2.position.set( 0, 0, 0 );
 scene.add( light2 );
 
-CreateAxis( scene );
-cube = CreateCube( scene );
-cube.position.set( 5, 5, 5 );
+CreateAxis(scene);
+
+
+var keyboard = new THREEx.KeyboardState();
+var stateManager = new StateManager();
+stateManager.SetState("StateFirst");
 
 var render = function () {
 	requestAnimationFrame(render);
 
-	cube.rotation.x += 0.01;
-	cube.rotation.y += 0.02;
-	cube.rotation.z += 0.03;
+	stateManager.Update();
+	ProcessKeyInput(keyboard);
 
 	renderer.render(scene, camera);
 };
