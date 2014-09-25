@@ -42,6 +42,9 @@ StateFirst.prototype.Update = function (dt) {
 
 function StateSecond () {
 	this._stateName = "StateSecond";
+
+	this._genTimer = 0;
+	this._player = undefined;
 }
 
 StateSecond.prototype = new State();
@@ -53,15 +56,33 @@ StateSecond.prototype.OnEnter = function () {
 	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
 	var mesh = new THREE.Mesh( geometry, material );
 	this._root.add( mesh );
-	this._cube = mesh;
+	this._player = mesh;
+
+	camera = new THREE.PerspectiveCamera(
+		75, 
+		window.innerWidth / window.innerHeight, 
+		0.1, 
+		1000);
+	camera.position.set( 0, 5, -15 );
+	camera.lookAt( this._player.position );
+	this._player.add( camera );
 }
 
 StateSecond.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
 
-	this._cube.rotation.x += 0.01;
-	this._cube.rotation.y += 0.02;
-	this._cube.rotation.z += 0.03;
+	this._player.position.z += 2 * dt;
+
+	this._genTimer += dt;
+	if( this._genTimer > 3.0 ) {
+		this._genTimer = 0;
+
+		var geometry = new THREE.CubeGeometry( 5, 5, 5 );
+		var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
+		var mesh = new THREE.Mesh( geometry, material );
+		mesh.position.set( Math.random() * 10 - 5, Math.random() * 10 - 5, Math.random() * 10 - 5 );
+		this._root.add( mesh );
+	}
 }
 
 
@@ -165,8 +186,10 @@ stateManager.SetState("StateSecond");
 var render = function () {
 	requestAnimationFrame(render);
 
-	stateManager.Update();
 	ProcessKeyInput(keyboard);
+
+	var dt = clock.getDelta();
+	stateManager.Update( dt );
 
 	renderer.render(scene, camera);
 };
