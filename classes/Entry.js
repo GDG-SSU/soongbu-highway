@@ -55,8 +55,14 @@ StateSecond.prototype.OnEnter = function () {
 	var geometry = new THREE.CubeGeometry( 5, 5, 5 );
 	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
 	var mesh = new THREE.Mesh( geometry, material );
+	mesh.position.set( 0, 3, 0 );
 	this._root.add( mesh );
 	this._player = mesh;
+
+	var light = new THREE.PointLight( 0xFFFFFF );
+	light.position.set( 0, 10, 0 );
+	this._player.add( light );
+
 
 	camera = new THREE.PerspectiveCamera(
 		75, 
@@ -66,6 +72,12 @@ StateSecond.prototype.OnEnter = function () {
 	camera.position.set( 0, 5, -15 );
 	camera.lookAt( this._player.position );
 	this._player.add( camera );
+
+	// create plane
+	var planeGeometry = new THREE.CubeGeometry( 100, 1, 100 );
+	var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xaaaaaa } );
+	var planeMesh = new THREE.Mesh( planeGeometry, planeMaterial );
+	this._root.add( planeMesh );
 }
 
 StateSecond.prototype.Update = function (dt) {
