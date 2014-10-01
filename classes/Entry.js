@@ -75,9 +75,11 @@ StateGame.prototype.OnEnter = function () {
 		window.innerWidth / window.innerHeight, 
 		0.1, 
 		1000);
-	camera.position.set( 0, 6, -15 );
-	camera.lookAt( this._player.position );
 	this._player.add( camera );
+	console.log( camera );
+	var lookat = new THREE.Vector3( 0, 0, 1 );
+	camera.lookAt( lookat );
+	camera.position.set( 0, 4, 1 );
 
 	// create plane
 	var planeGeometry = new THREE.CubeGeometry( 1000, 1, 1000 );
@@ -106,12 +108,12 @@ StateGame.prototype.Update = function (dt) {
 	}
 
 	if( keyboard.pressed('left') ) {
-		this._player.position.x += 10 * dt;
-		this._player.position.x = Math.min( 30, this._player.position.x );
+		this._player.position.x += 30 * dt;
+		this._player.position.x = Math.min( 50, this._player.position.x );
 	}
 	if( keyboard.pressed('right') ) {
-		this._player.position.x += -10 * dt;
-		this._player.position.x = Math.max( -30, this._player.position.x );
+		this._player.position.x += -30 * dt;
+		this._player.position.x = Math.max( -50, this._player.position.x );
 	}
 
 	this.RemoveFarEnemy();
@@ -119,12 +121,12 @@ StateGame.prototype.Update = function (dt) {
 }
 
 StateGame.prototype.CreateEnemy = function () {
-	for( var i = 1; i <= 8; i ++ ) {
+	for( var i = 1; i <= 10; i ++ ) {
 		var pos = this._player.position;
 		var geometry = new THREE.CubeGeometry( THREE.Math.randFloat( 5, 10 ), 30, 1 );
 		var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
 		var mesh = new THREE.Mesh( geometry, material );
-		mesh.position.set( pos.x + THREE.Math.randFloat( -20, 20 ), pos.y, pos.z + 150 );
+		mesh.position.set( pos.x + THREE.Math.randFloat( -20, 20 ), 15, pos.z + 200 );
 		this._root.add( mesh );
 
 		this._enemies.push( mesh );
