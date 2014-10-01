@@ -81,7 +81,7 @@ StateGame.prototype.OnEnter = function () {
 
 	// create plane
 	var planeGeometry = new THREE.CubeGeometry( 1000, 1, 1000 );
-	var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xfefefe } );
+	var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xaaaaaa } );
 	var planeMesh = new THREE.Mesh( planeGeometry, planeMaterial );
 	this._player.add( planeMesh );
 	planeMesh.position.y -= 5;
@@ -93,9 +93,9 @@ StateGame.prototype.Update = function (dt) {
 	this._player.position.z += this._player._speed * dt;
 
 	this._speedUpTimer += dt;
-	if( this._speedUpTimer > 0.3 ) {
+	if( this._speedUpTimer > 0.2 ) {
 		this._speedUpTimer = 0;
-		this._player._speed = Math.max( 50, this._player._speed * 1.003 );
+		this._player._speed = Math.max( 40, this._player._speed * 1.001 );
 	}
 
 	this._genTimer += dt;
@@ -107,9 +107,11 @@ StateGame.prototype.Update = function (dt) {
 
 	if( keyboard.pressed('left') ) {
 		this._player.position.x += 10 * dt;
+		this._player.position.x = Math.min( 30, this._player.position.x );
 	}
 	if( keyboard.pressed('right') ) {
 		this._player.position.x += -10 * dt;
+		this._player.position.x = Math.max( -30, this._player.position.x );
 	}
 
 	this.RemoveFarEnemy();
@@ -117,12 +119,12 @@ StateGame.prototype.Update = function (dt) {
 }
 
 StateGame.prototype.CreateEnemy = function () {
-	for( var i = 1; i <= 5; i ++ ) {
+	for( var i = 1; i <= 8; i ++ ) {
 		var pos = this._player.position;
-		var geometry = new THREE.CubeGeometry( 5, 30, 1 );
+		var geometry = new THREE.CubeGeometry( THREE.Math.randFloat( 5, 10 ), 30, 1 );
 		var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
 		var mesh = new THREE.Mesh( geometry, material );
-		mesh.position.set( pos.x + THREE.Math.randFloat( -20, 20 ), pos.y, pos.z + 50 );
+		mesh.position.set( pos.x + THREE.Math.randFloat( -20, 20 ), pos.y, pos.z + 150 );
 		this._root.add( mesh );
 
 		this._enemies.push( mesh );
