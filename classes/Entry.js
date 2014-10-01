@@ -95,17 +95,7 @@ StateGame.prototype.Update = function (dt) {
 		this.CreateEnemy();
 	}
 
-
-	var playerBoundingBox = this._player.geometry.boundingBox.clone();
-	playerBoundingBox.translate( this._player.position );
-	for (var i = this._enemies.length - 1; i >= 0; i--) {
-		var enemy = this._enemies[i];
-		var boundingBox = enemy.geometry.boundingBox.clone();
-		boundingBox.translate( enemy.position )
-		if( playerBoundingBox.isIntersectionBox( boundingBox ) ) {
-			console.log('collided!!');
-		}
-	};
+	this.CollisionCheck();
 }
 
 StateGame.prototype.CreateEnemy = function () {
@@ -118,6 +108,23 @@ StateGame.prototype.CreateEnemy = function () {
 
 	this._enemies.push( mesh );
 	geometry.computeBoundingBox();
+}
+
+StateGame.prototype.CollisionCheck = function () {
+	var playerBoundingBox = this._player.geometry.boundingBox.clone();
+	playerBoundingBox.translate( this._player.position );
+	for (var i = this._enemies.length - 1; i >= 0; i--) {
+		var enemy = this._enemies[i];
+		var boundingBox = enemy.geometry.boundingBox.clone();
+		boundingBox.translate( enemy.position )
+		if( playerBoundingBox.isIntersectionBox( boundingBox ) ) {
+			this.GameOver();
+		}
+	};
+}
+
+StateGame.prototype.GameOver = function () {
+	stateManager.SetState("StateFirst");
 }
 
 
