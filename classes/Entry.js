@@ -56,7 +56,7 @@ StateGame.prototype = new State();
 StateGame.prototype.OnEnter = function () {
 	State.prototype.OnEnter.call( this );
 
-	var geometry = new THREE.CubeGeometry( 5, 5, 5 );
+	var geometry = new THREE.CubeGeometry( 2, 4, 4 );
 	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
 	var mesh = new THREE.Mesh( geometry, material );
 	mesh.position.set( 0, 3, 0 );
@@ -71,11 +71,11 @@ StateGame.prototype.OnEnter = function () {
 
 
 	camera = new THREE.PerspectiveCamera(
-		75, 
+		60, 
 		window.innerWidth / window.innerHeight, 
 		0.1, 
 		1000);
-	camera.position.set( 0, 5, -15 );
+	camera.position.set( 0, 6, -15 );
 	camera.lookAt( this._player.position );
 	this._player.add( camera );
 
@@ -84,7 +84,7 @@ StateGame.prototype.OnEnter = function () {
 	var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xfefefe } );
 	var planeMesh = new THREE.Mesh( planeGeometry, planeMaterial );
 	this._player.add( planeMesh );
-	planeMesh.position.y -= 10;
+	planeMesh.position.y -= 5;
 }
 
 StateGame.prototype.Update = function (dt) {
@@ -93,13 +93,13 @@ StateGame.prototype.Update = function (dt) {
 	this._player.position.z += this._player._speed * dt;
 
 	this._speedUpTimer += dt;
-	if( this._speedUpTimer > 1.0 ) {
+	if( this._speedUpTimer > 0.3 ) {
 		this._speedUpTimer = 0;
-		this._player._speed = this._player._speed * 1.05;
+		this._player._speed = Math.max( 50, this._player._speed * 1.003 );
 	}
 
 	this._genTimer += dt;
-	if( this._genTimer > 3.0 ) {
+	if( this._genTimer > 1.0 ) {
 		this._genTimer = 0;
 
 		this.CreateEnemy();
@@ -117,15 +117,17 @@ StateGame.prototype.Update = function (dt) {
 }
 
 StateGame.prototype.CreateEnemy = function () {
-	var pos = this._player.position;
-	var geometry = new THREE.CubeGeometry( 3, 3, 3 );
-	var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
-	var mesh = new THREE.Mesh( geometry, material );
-	mesh.position.set( pos.x + THREE.Math.randFloat( -10, 10 ), pos.y, pos.z + 20 );
-	this._root.add( mesh );
+	for( var i = 1; i <= 5; i ++ ) {
+		var pos = this._player.position;
+		var geometry = new THREE.CubeGeometry( 5, 30, 1 );
+		var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
+		var mesh = new THREE.Mesh( geometry, material );
+		mesh.position.set( pos.x + THREE.Math.randFloat( -20, 20 ), pos.y, pos.z + 50 );
+		this._root.add( mesh );
 
-	this._enemies.push( mesh );
-	geometry.computeBoundingBox();
+		this._enemies.push( mesh );
+		geometry.computeBoundingBox();
+	}
 }
 
 StateGame.prototype.RemoveFarEnemy = function () {
@@ -227,6 +229,9 @@ function Init () {
 	renderer.setClearColor( 0xeeeeee, 1.0 ); // the default
 	renderer.setSize(window.innerWidth - 10, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
+
+
+	scene.add( new THREE.AmbientLight( 0x222222 ) );
 
 	var light = new THREE.PointLight( 0xFFFF00 );
 	light.position.set( 10, 10, 10 );
