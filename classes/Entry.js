@@ -225,7 +225,7 @@ function Init () {
 
 	renderer = new THREE.WebGLRenderer();
 	renderer.setClearColor( 0xeeeeee, 1.0 ); // the default
-	renderer.setSize(window.innerWidth, window.innerHeight);
+	renderer.setSize(window.innerWidth - 10, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
 
 	var light = new THREE.PointLight( 0xFFFF00 );
