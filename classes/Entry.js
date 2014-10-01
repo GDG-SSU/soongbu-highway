@@ -45,6 +45,8 @@ function StateGame () {
 
 	this._genTimer = 0;
 	this._player = undefined;
+
+	this._enemies = [];
 }
 
 StateGame.prototype = new State();
@@ -58,6 +60,7 @@ StateGame.prototype.OnEnter = function () {
 	mesh.position.set( 0, 3, 0 );
 	this._root.add( mesh );
 	this._player = mesh;
+	this._player.geometry.computeBoundingBox();
 
 	var light = new THREE.PointLight( 0xFFFFFF );
 	light.position.set( 0, 10, 0 );
@@ -89,15 +92,34 @@ StateGame.prototype.Update = function (dt) {
 	if( this._genTimer > 3.0 ) {
 		this._genTimer = 0;
 
-		var pos = this._player.position;
-
-		var geometry = new THREE.CubeGeometry( 3, 3, 3 );
-		var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
-		var mesh = new THREE.Mesh( geometry, material );
-		mesh.position.set( pos.x + THREE.Math.randFloat( -10, 10 ), pos.y, pos.z + 20 );
-		this._root.add( mesh );
+		this.CreateEnemy();
 	}
+
+
+	var playerBoundingBox = this._player.geometry.boundingBox.clone();
+	playerBoundingBox.translate( this._player.position );
+	for (var i = this._enemies.length - 1; i >= 0; i--) {
+		var enemy = this._enemies[i];
+		var boundingBox = enemy.geometry.boundingBox.clone();
+		boundingBox.translate( enemy.position )
+		if( playerBoundingBox.isIntersectionBox( boundingBox ) ) {
+			console.log('collided!!');
+		}
+	};
 }
+
+StateGame.prototype.CreateEnemy = function () {
+	var pos = this._player.position;
+	var geometry = new THREE.CubeGeometry( 3, 3, 3 );
+	var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
+	var mesh = new THREE.Mesh( geometry, material );
+	mesh.position.set( pos.x + THREE.Math.randFloat( -10, 10 ), pos.y, pos.z + 20 );
+	this._root.add( mesh );
+
+	this._enemies.push( mesh );
+	geometry.computeBoundingBox();
+}
+
 
 
 
