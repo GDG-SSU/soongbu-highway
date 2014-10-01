@@ -43,6 +43,8 @@ StateFirst.prototype.Update = function (dt) {
 function StateGame () {
 	this._stateName = "StateGame";
 
+	this._speedUpTimer = 0;
+
 	this._genTimer = 0;
 	this._player = undefined;
 
@@ -61,9 +63,10 @@ StateGame.prototype.OnEnter = function () {
 	this._root.add( mesh );
 	this._player = mesh;
 	this._player.geometry.computeBoundingBox();
+	this._player._speed = 10;
 
 	var light = new THREE.PointLight( 0xFFFFFF );
-	light.position.set( 0, 10, 0 );
+	light.position.set( 0, 20, 0 );
 	this._player.add( light );
 
 
@@ -77,22 +80,36 @@ StateGame.prototype.OnEnter = function () {
 	this._player.add( camera );
 
 	// create plane
-	var planeGeometry = new THREE.CubeGeometry( 100, 1, 100 );
-	var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xaaaaaa } );
+	var planeGeometry = new THREE.CubeGeometry( 1000, 1, 1000 );
+	var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xfefefe } );
 	var planeMesh = new THREE.Mesh( planeGeometry, planeMaterial );
-	this._root.add( planeMesh );
+	this._player.add( planeMesh );
+	planeMesh.position.y -= 10;
 }
 
 StateGame.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
 
-	this._player.position.z += 5 * dt;
+	this._player.position.z += this._player._speed * dt;
+
+	this._speedUpTimer += dt;
+	if( this._speedUpTimer > 1.0 ) {
+		this._speedUpTimer = 0;
+		this._player._speed = this._player._speed * 1.05;
+	}
 
 	this._genTimer += dt;
 	if( this._genTimer > 3.0 ) {
 		this._genTimer = 0;
 
 		this.CreateEnemy();
+	}
+
+	if( keyboard.pressed('left') ) {
+		this._player.position.x += 10 * dt;
+	}
+	if( keyboard.pressed('right') ) {
+		this._player.position.x += -10 * dt;
 	}
 
 	this.RemoveFarEnemy();
@@ -144,7 +161,7 @@ StateGame.prototype.CollisionCheck = function () {
 }
 
 StateGame.prototype.GameOver = function () {
-	stateManager.SetState("StateFirst");
+	// stateManager.SetState("StateFirst");
 }
 
 
