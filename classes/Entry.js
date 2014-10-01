@@ -95,6 +95,7 @@ StateGame.prototype.Update = function (dt) {
 		this.CreateEnemy();
 	}
 
+	this.RemoveFarEnemy();
 	this.CollisionCheck();
 }
 
@@ -108,6 +109,25 @@ StateGame.prototype.CreateEnemy = function () {
 
 	this._enemies.push( mesh );
 	geometry.computeBoundingBox();
+}
+
+StateGame.prototype.RemoveFarEnemy = function () {
+	var removeList = [];
+
+	var pz = this._player.position.z;
+	for (var i = this._enemies.length - 1; i >= 0; i--) {
+		var enemy = this._enemies[i];
+		var ez = enemy.position.z;
+		if( pz - ez > 100 ) {
+			removeList.push( enemy );
+		}
+	};
+
+	for (var i = removeList.length - 1; i >= 0; i--) {
+		var obj = removeList[i];
+		var index = this._enemies.indexOf( obj );
+		this._enemies.splice( index, index );
+	};
 }
 
 StateGame.prototype.CollisionCheck = function () {
