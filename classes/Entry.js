@@ -40,16 +40,16 @@ StateFirst.prototype.Update = function (dt) {
 }
 
 
-function StateSecond () {
-	this._stateName = "StateSecond";
+function StateGame () {
+	this._stateName = "StateGame";
 
 	this._genTimer = 0;
 	this._player = undefined;
 }
 
-StateSecond.prototype = new State();
+StateGame.prototype = new State();
 
-StateSecond.prototype.OnEnter = function () {
+StateGame.prototype.OnEnter = function () {
 	State.prototype.OnEnter.call( this );
 
 	var geometry = new THREE.CubeGeometry( 5, 5, 5 );
@@ -80,7 +80,7 @@ StateSecond.prototype.OnEnter = function () {
 	this._root.add( planeMesh );
 }
 
-StateSecond.prototype.Update = function (dt) {
+StateGame.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
 
 	this._player.position.z += 5 * dt;
@@ -132,8 +132,8 @@ StateManager.prototype = {
 		if( stateName === "StateFirst" ) {
 			state = new StateFirst();
 		}
-		else if( stateName === "StateSecond" ) {
-			state = new StateSecond();
+		else if( stateName === "StateGame" ) {
+			state = new StateGame();
 		}
 
 		return state;
@@ -185,7 +185,7 @@ ProcessKeyInput = function (keyboard) {
 		stateManager.SetState("StateFirst");
 	}
 	else if( keyboard.pressed("2") ) {
-		stateManager.SetState("StateSecond");
+		stateManager.SetState("StateGame");
 	}
 }
 
@@ -195,7 +195,7 @@ CreateAxis(scene);
 
 var keyboard = new THREEx.KeyboardState();
 var stateManager = new StateManager();
-stateManager.SetState("StateSecond");
+stateManager.SetState("StateGame");
 
 var render = function () {
 	requestAnimationFrame(render);
