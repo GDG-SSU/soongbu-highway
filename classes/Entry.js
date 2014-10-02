@@ -67,7 +67,7 @@ StateGame.prototype.OnEnter = function () {
 	this._player.geometry.computeBoundingBox();
 	this._player._speed = 20;
 
-	var light = new THREE.PointLight( 0xFFFFFF );
+	var light = new THREE.PointLight( 0xFFFFFF, 2, 100 );
 	light.position.set( 0, 20, 0 );
 	this._player.add( light );
 
@@ -79,9 +79,9 @@ StateGame.prototype.OnEnter = function () {
 		1000);
 	this._player.add( camera );
 	console.log( camera );
-	var lookat = new THREE.Vector3( 0, 0, 1 );
+	var lookat = new THREE.Vector3( 0, -0.1, 1 );
 	camera.lookAt( lookat );
-	camera.position.set( 0, 4, -10 );
+	camera.position.set( 0, 5, 1 );
 
 
 	// create floor
@@ -89,11 +89,16 @@ StateGame.prototype.OnEnter = function () {
 	this._root.add( floor );
 	this._floor = floor;
 
+	var floorTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/floor_pattern.png' );
+	floorTexture.wrapS = THREE.RepeatWrapping;
+	floorTexture.wrapT = THREE.RepeatWrapping;
+	floorTexture.repeat.set( 100, 100 );
 	var planeGeometry = new THREE.PlaneGeometry( 1000, 1000 );
-	var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xaaaaaa, side: THREE.DoubleSide } );
+	var planeMaterial = new THREE.MeshPhongMaterial( { map: floorTexture, side: THREE.DoubleSide } );
 	var planeMesh = new THREE.Mesh( planeGeometry, planeMaterial );
 	planeMesh.rotateX( THREE.Math.degToRad( 90 ) );
 	floor.add( planeMesh );
+
 
 	var sidePlaneGeometry = new THREE.PlaneGeometry( 400, 1000 );
 	var sidePlaneMaterial = new THREE.MeshLambertMaterial( { color: 0xffffff, side: THREE.DoubleSide } );
@@ -110,7 +115,11 @@ StateGame.prototype.OnEnter = function () {
 StateGame.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
 
-	this._player.position.z += this._player._speed * dt;
+	var offset = this._player._speed * dt;
+	this._player.position.z += offset;
+	if( this._player.position.z - this._floor.position.z > 100 ) {
+		this._floor.position.z += 100;
+	}
 
 	this._speedUpTimer += dt;
 	if( this._speedUpTimer > 0.2 ) {
@@ -133,8 +142,6 @@ StateGame.prototype.Update = function (dt) {
 		this._player.position.x += -30 * dt;
 		this._player.position.x = Math.max( -LINE_WIDTH * 1.5, this._player.position.x );
 	}
-
-	this._floor.position.z = this._player.position.z;
 
 	this.RemoveFarEnemy();
 	this.CollisionCheck();
@@ -264,15 +271,6 @@ function Init () {
 
 
 	scene.add( new THREE.AmbientLight( 0x222222 ) );
-
-	var light = new THREE.PointLight( 0xFFFF00 );
-	light.position.set( 10, 10, 10 );
-	scene.add( light );
-
-	var light2 = new THREE.PointLight( 0xFFFF00 );
-	light2.position.set( 0, 0, 0 );
-	scene.add( light2 );
-
 
 	clock = new THREE.Clock();
 }
