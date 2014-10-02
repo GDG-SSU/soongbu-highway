@@ -44,6 +44,7 @@ var LINE_WIDTH = 10;
 var ENEMY_BLANK = 0;
 var ENEMY_WALL = 1;
 var ENEMY_BURSTER = 2;
+var globalPlayer, controls;
 
 function StateGame () {
 	this._stateName = "StateGame";
@@ -72,10 +73,19 @@ StateGame.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
 
 	TWEEN.update();
+	if ( controls !== undefined ) {
+		controls.update();
+	}
 
 	// move floor and adjust position of that
-	var offset = this._player._speed * dt;
-	this._player.position.z += offset;
+	var speed = 50 * dt;
+	var dx = -1 * Math.sin(this._player.rotation.y) * speed;
+	var dz = -1 * Math.cos(this._player.rotation.y) * speed;
+	this._player.position.x += dx;
+	this._player.position.z += dz;
+	this._player.position.x = Math.min( LINE_WIDTH * 1.5, this._player.position.x );
+	this._player.position.x = Math.max( -LINE_WIDTH * 1.5, this._player.position.x );
+
 	if( this._player.position.z - this._floor.position.z > 100 ) {
 		this._floor.position.z += 100;
 	}
@@ -103,6 +113,7 @@ StateGame.prototype.Update = function (dt) {
 
 	this.CreateClimate();
 	this.RemoveFarClimate();
+	// console.log( this._climate.length + ' ' + this._items.length + ' ' + this._enemies.length );
 
 	this.ProcessInput(dt);
 	this.RemoveFarObject();
@@ -154,6 +165,7 @@ StateGame.prototype.CreatePlayer = function () {
 	this._player = mesh;
 	this._player.geometry.computeBoundingBox();
 	this._player._speed = 40;
+	globalPlayer = this._player;
 
 	var light = new THREE.PointLight( 0xFFFFFF, 2, 100 );
 	light.position.set( 0, 20, 0 );
@@ -166,9 +178,27 @@ StateGame.prototype.CreatePlayer = function () {
 		1000);
 	this._player.add( camera );
 	console.log( camera );
-	var lookat = new THREE.Vector3( 0, -0.1, 1 );
+	var lookat = new THREE.Vector3( 0, -0.1, -1 );
 	camera.lookAt( lookat );
 	camera.position.set( 0, 5, 1 );
+
+	if( CardBoardSystemOn ) {
+		var hasOrientation = function(evt) {
+			var absolute = evt.absolute;
+			var alpha	= evt.alpha;
+			var beta	= evt.beta;
+			var gamma	= evt.gamma;
+
+			if (!alpha) {
+				return;
+			}
+			window.removeEventListener('deviceorientation', hasOrientation);
+			controls = new THREE.DeviceOrientationControls( globalPlayer );
+			controls.connect();
+			globalPlayer.rotation.y = Math.PI;
+		};
+		window.addEventListener('deviceorientation', hasOrientation);
+	}
 }
 
 StateGame.prototype.CreateClimate = function () {
@@ -274,6 +304,10 @@ StateGame.prototype.ProcessInput = function (dt) {
 	if( keyboard.pressed('right') ) {
 		this._player.position.x += -30 * dt;
 		this._player.position.x = Math.max( -LINE_WIDTH * 1.5, this._player.position.x );
+	}
+
+	if( CardBoardSystemOn ) {
+
 	}
 }
 
@@ -437,6 +471,7 @@ StateManager.prototype = {
 
 
 var scene, camera, clock, renderer;
+var stereoEffect, CardBoardSystemOn = true;
 
 function Init () {
 	scene = new THREE.Scene();
@@ -453,10 +488,17 @@ function Init () {
 	renderer.setSize(window.innerWidth - 10, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
 
+	effect = new THREE.StereoEffect(renderer);
+	effect.separation = 0.2;
+	effect.targetDistance = 50;
+	effect.setSize( window.innerWidth, window.innerHeight );
+
 
 	scene.add( new THREE.AmbientLight( 0x222222 ) );
 
 	clock = new THREE.Clock();
+
+	enterFullscreen();
 }
 
 console.log( window.innerWidth + " " + window.innerHeight );
@@ -471,6 +513,28 @@ ProcessKeyInput = function (keyboard) {
 	}
 	else if( keyboard.pressed("2") ) {
 		stateManager.SetState("StateGame");
+	}
+}
+
+function onFullScreenEnter() {
+	elem.onwebkitfullscreenchange = onFullScreenExit;
+	elem.onmozfullscreenchange = onFullScreenExit;
+};
+
+function enterFullscreen() {
+	var elem = document.body;
+	elem.onwebkitfullscreenchange = onFullScreenEnter;
+	elem.onmozfullscreenchange = onFullScreenEnter;
+	elem.onfullscreenchange = onFullScreenEnter;
+	if (elem.webkitRequestFullscreen) {
+		elem.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+	} 
+	else {
+		if (elem.mozRequestFullScreen) {
+			elem.mozRequestFullScreen();
+		} else {
+			elem.requestFullscreen();
+		}
 	}
 }
 
@@ -490,7 +554,12 @@ var render = function () {
 	var dt = clock.getDelta();
 	stateManager.Update( dt );
 
-	renderer.render(scene, camera);
+	if( CardBoardSystemOn ) {
+		effect.render( scene, camera );
+	}
+	else {
+		renderer.render(scene, camera);
+	}
 };
 
 render();
