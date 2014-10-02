@@ -92,7 +92,7 @@ StateGame.prototype.Update = function (dt) {
 		this.CreateEnemy();
 	}
 
-	this.ProcessInput();
+	this.ProcessInput(dt);
 	this.RemoveFarEnemy();
 	this.CollisionCheck();
 }
@@ -103,27 +103,34 @@ StateGame.prototype.CreateMap = function () {
 	this._root.add( floor );
 	this._floor = floor;
 
-	var floorTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/floor_pattern.png' );
+	var floorTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/floor_light.png' );
 	floorTexture.wrapS = THREE.RepeatWrapping;
 	floorTexture.wrapT = THREE.RepeatWrapping;
-	floorTexture.repeat.set( 100, 100 );
-	var planeGeometry = new THREE.PlaneGeometry( 1000, 1000 );
-	var planeMaterial = new THREE.MeshPhongMaterial( { map: floorTexture, side: THREE.DoubleSide } );
-	var planeMesh = new THREE.Mesh( planeGeometry, planeMaterial );
-	planeMesh.rotateX( THREE.Math.degToRad( 90 ) );
-	floor.add( planeMesh );
+	floorTexture.repeat.set( 1, 10 );
+	var geometry = new THREE.PlaneGeometry( 30, 1000 );
+	var material = new THREE.MeshBasicMaterial( {map: floorTexture, side: THREE.DoubleSide, transparent: true, overdraw: true} );
+	var plane = new THREE.Mesh( geometry, material );
+	plane.rotateX(THREE.Math.degToRad(90));
 
+	floor.add( plane );
 
-	var sidePlaneGeometry = new THREE.PlaneGeometry( 400, 1000 );
-	var sidePlaneMaterial = new THREE.MeshLambertMaterial( { color: 0xffffff, side: THREE.DoubleSide } );
-	var sidePlaneMesh = new THREE.Mesh( sidePlaneGeometry, sidePlaneMaterial );
-	sidePlaneMesh.position.y += 0.1;
-	sidePlaneMesh.rotateX( THREE.Math.degToRad( 90 ) );
-	var sidePlaneMesh2 = sidePlaneMesh.clone();
-	sidePlaneMesh.position.x += -(200 + LINE_WIDTH * 1.5);
-	sidePlaneMesh2.position.x += (200 + LINE_WIDTH * 1.5);
-	floor.add( sidePlaneMesh );
-	floor.add( sidePlaneMesh2 );
+	var sideTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/wall_direction.png' );
+	sideTexture.wrapS = THREE.RepeatWrapping;
+	sideTexture.wrapT = THREE.RepeatWrapping;
+	sideTexture.repeat.set( 1, 100 );
+	geometry = new THREE.PlaneGeometry( 5, 1000 );
+	material = new THREE.MeshPhongMaterial( { map: sideTexture, side: THREE.DoubleSide, transparent: true, overdraw: true } );
+	side = new THREE.Mesh( geometry, material );
+	side.rotateX(THREE.Math.degToRad(90));
+
+	side.rotateY(THREE.Math.degToRad(90));
+	side.position.y = 5;
+	side.position.x = 15;
+	floor.add(side);
+
+	var side2 = side.clone();
+	side2.position.x = -15;
+	floor.add(side2);
 }
 
 StateGame.prototype.CreatePlayer = function () {
@@ -211,7 +218,7 @@ StateGame.prototype.CreateEnemy = function () {
 	}
 }
 
-StateGame.prototype.ProcessInput = function () {
+StateGame.prototype.ProcessInput = function (dt) {
 	if( keyboard.pressed('left') ) {
 		this._player.position.x += 30 * dt;
 		this._player.position.x = Math.min( LINE_WIDTH * 1.5, this._player.position.x );
@@ -328,7 +335,7 @@ function Init () {
 	camera.lookAt( scene.position );
 
 	renderer = new THREE.WebGLRenderer();
-	renderer.setClearColor( 0xeeeeee, 1.0 ); // the default
+	renderer.setClearColor( 0x000000, 1.0 ); // the default
 	renderer.setSize(window.innerWidth - 10, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
 
