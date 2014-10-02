@@ -79,7 +79,7 @@ StateGame.prototype.OnEnter = function () {
 	console.log( camera );
 	var lookat = new THREE.Vector3( 0, 0, 1 );
 	camera.lookAt( lookat );
-	camera.position.set( 0, 4, 1 );
+	camera.position.set( 0, 4, 0 );
 
 	// create plane
 	var planeGeometry = new THREE.CubeGeometry( 1000, 1, 1000 );
@@ -97,7 +97,7 @@ StateGame.prototype.Update = function (dt) {
 	this._speedUpTimer += dt;
 	if( this._speedUpTimer > 0.2 ) {
 		this._speedUpTimer = 0;
-		this._player._speed = Math.max( 40, this._player._speed * 1.001 );
+		this._player._speed = Math.min( 40, this._player._speed * 1.001 );
 	}
 
 	this._genTimer += dt;
