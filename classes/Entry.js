@@ -56,6 +56,7 @@ function StateGame () {
 
 	this._enemies = [];
 	this._items = [];
+	this._climate = [];
 }
 
 StateGame.prototype = new State();
@@ -99,6 +100,9 @@ StateGame.prototype.Update = function (dt) {
 		this._itemGenTimer = 0;
 		this.CreateItem();
 	}
+
+	this.CreateClimate();
+	this.RemoveFarClimate();
 
 	this.ProcessInput(dt);
 	this.RemoveFarObject();
@@ -164,7 +168,17 @@ StateGame.prototype.CreatePlayer = function () {
 	console.log( camera );
 	var lookat = new THREE.Vector3( 0, -0.1, 1 );
 	camera.lookAt( lookat );
-	camera.position.set( 0, 10, -20 );
+	camera.position.set( 0, 5, 1 );
+}
+
+StateGame.prototype.CreateClimate = function () {
+	var pos = this._player.position;
+	var geometry = new THREE.BoxGeometry( .1, .1, THREE.Math.randInt(1, 4) );
+	var material = new THREE.MeshBasicMaterial( { color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: THREE.Math.randInt(0, 5) / 40 } );
+	var wind = new THREE.Mesh( geometry, material );
+	wind.position.set( THREE.Math.randInt(0, 30) - 15, THREE.Math.randInt(3, 12), pos.z + 20 );
+	this._root.add( wind );
+	this._climate.push( wind );
 }
 
 StateGame.prototype.CreateEnemy = function () {
@@ -346,6 +360,27 @@ StateGame.prototype.CollisionCheck = function () {
 				enemy.Burst( enemy );
 			}
 		}
+	};
+}
+
+StateGame.prototype.RemoveFarClimate = function () {
+	var removeList = [];
+
+	var pz = this._player.position.z;
+	for (var i = this._climate.length - 1; i >= 0; i--) {
+		var climate = this._climate[i];
+		var ez = climate.position.z;
+		if( pz - ez > 100 ) {
+			removeList.push( climate );
+		}else{
+			climate.position.z -= this._player._speed / 80;
+		}
+	};
+
+	for (var i = removeList.length - 1; i >= 0; i--) {
+		var obj = removeList[i];
+		var index = this._climate.indexOf( obj );
+		this._climate.splice( index, index );
 	};
 }
 
