@@ -28,7 +28,7 @@ StateFirst.prototype = new State();
 StateFirst.prototype.OnEnter = function () {
 	State.prototype.OnEnter.call( this );
 
-	var geometry = new THREE.CubeGeometry( 5, 5, 5 );
+	var geometry = new THREE.BoxGeometry( 5, 5, 5 );
 	var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
 	var mesh = new THREE.Mesh( geometry, material );
 	this._root.add( mesh );
@@ -39,6 +39,8 @@ StateFirst.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
 }
 
+
+var LINE_WIDTH = 10;
 
 function StateGame () {
 	this._stateName = "StateGame";
@@ -56,14 +58,14 @@ StateGame.prototype = new State();
 StateGame.prototype.OnEnter = function () {
 	State.prototype.OnEnter.call( this );
 
-	var geometry = new THREE.CubeGeometry( 2, 4, 4 );
+	var geometry = new THREE.BoxGeometry( 2, 4, 4 );
 	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
 	var mesh = new THREE.Mesh( geometry, material );
 	mesh.position.set( 0, 3, 0 );
 	this._root.add( mesh );
 	this._player = mesh;
 	this._player.geometry.computeBoundingBox();
-	this._player._speed = 10;
+	this._player._speed = 20;
 
 	var light = new THREE.PointLight( 0xFFFFFF );
 	light.position.set( 0, 20, 0 );
@@ -71,22 +73,38 @@ StateGame.prototype.OnEnter = function () {
 
 
 	camera = new THREE.PerspectiveCamera(
-		60, 
+		75, 
 		window.innerWidth / window.innerHeight, 
-		0.1, 
+		1, 
 		1000);
 	this._player.add( camera );
 	console.log( camera );
 	var lookat = new THREE.Vector3( 0, 0, 1 );
 	camera.lookAt( lookat );
-	camera.position.set( 0, 4, 0 );
+	camera.position.set( 0, 4, -10 );
 
-	// create plane
-	var planeGeometry = new THREE.CubeGeometry( 1000, 1, 1000 );
-	var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xaaaaaa } );
+
+	// create floor
+	var floor = new THREE.Object3D();
+	this._root.add( floor );
+	this._floor = floor;
+
+	var planeGeometry = new THREE.PlaneGeometry( 1000, 1000 );
+	var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xaaaaaa, side: THREE.DoubleSide } );
 	var planeMesh = new THREE.Mesh( planeGeometry, planeMaterial );
-	this._player.add( planeMesh );
-	planeMesh.position.y -= 5;
+	planeMesh.rotateX( THREE.Math.degToRad( 90 ) );
+	floor.add( planeMesh );
+
+	var sidePlaneGeometry = new THREE.PlaneGeometry( 400, 1000 );
+	var sidePlaneMaterial = new THREE.MeshLambertMaterial( { color: 0xffffff, side: THREE.DoubleSide } );
+	var sidePlaneMesh = new THREE.Mesh( sidePlaneGeometry, sidePlaneMaterial );
+	sidePlaneMesh.position.y += 0.001;
+	sidePlaneMesh.rotateX( THREE.Math.degToRad( 90 ) );
+	var sidePlaneMesh2 = sidePlaneMesh.clone();
+	sidePlaneMesh.position.x += -(200 + LINE_WIDTH * 1.5);
+	sidePlaneMesh2.position.x += (200 + LINE_WIDTH * 1.5);
+	floor.add( sidePlaneMesh );
+	floor.add( sidePlaneMesh2 );
 }
 
 StateGame.prototype.Update = function (dt) {
@@ -109,24 +127,34 @@ StateGame.prototype.Update = function (dt) {
 
 	if( keyboard.pressed('left') ) {
 		this._player.position.x += 30 * dt;
-		this._player.position.x = Math.min( 50, this._player.position.x );
+		this._player.position.x = Math.min( LINE_WIDTH * 1.5, this._player.position.x );
 	}
 	if( keyboard.pressed('right') ) {
 		this._player.position.x += -30 * dt;
-		this._player.position.x = Math.max( -50, this._player.position.x );
+		this._player.position.x = Math.max( -LINE_WIDTH * 1.5, this._player.position.x );
 	}
+
+	this._floor.position.z = this._player.position.z;
 
 	this.RemoveFarEnemy();
 	this.CollisionCheck();
 }
 
 StateGame.prototype.CreateEnemy = function () {
-	for( var i = 1; i <= 10; i ++ ) {
+	var line = [ 1, 1, 1 ];
+	var blankLine = THREE.Math.randInt( 0, 2 );
+	line[ blankLine ] = 0;
+
+	for( var i = 0; i < line.length; i ++ ) {
+		if( line[i] === 0 ) {
+			continue;
+		}
+
 		var pos = this._player.position;
-		var geometry = new THREE.CubeGeometry( THREE.Math.randFloat( 5, 10 ), 30, 1 );
+		var geometry = new THREE.BoxGeometry( LINE_WIDTH, 30, 1 );
 		var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
 		var mesh = new THREE.Mesh( geometry, material );
-		mesh.position.set( pos.x + THREE.Math.randFloat( -20, 20 ), 15, pos.z + 200 );
+		mesh.position.set( (i - 1) * LINE_WIDTH, 15, pos.z + 200 );
 		this._root.add( mesh );
 
 		this._enemies.push( mesh );
