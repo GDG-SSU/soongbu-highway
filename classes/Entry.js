@@ -50,10 +50,12 @@ function StateGame () {
 
 	this._speedUpTimer = 0;
 
+	this._itemGenTimer = 0;
 	this._genTimer = 0;
 	this._player = undefined;
 
 	this._enemies = [];
+	this._items = [];
 }
 
 StateGame.prototype = new State();
@@ -81,7 +83,7 @@ StateGame.prototype.Update = function (dt) {
 	this._speedUpTimer += dt;
 	if( this._speedUpTimer > 0.2 ) {
 		this._speedUpTimer = 0;
-		this._player._speed = Math.min( 40, this._player._speed * 1.001 );
+		this._player._speed = Math.min( 60, this._player._speed * 1.001 );
 	}
 
 	// create enemy each time
@@ -92,8 +94,14 @@ StateGame.prototype.Update = function (dt) {
 		this.CreateEnemy();
 	}
 
+	this._itemGenTimer += dt;
+	if( this._itemGenTimer > 1.0 ) {
+		this._itemGenTimer = 0;
+		this.CreateItem();
+	}
+
 	this.ProcessInput(dt);
-	this.RemoveFarEnemy();
+	this.RemoveFarObject();
 	this.CollisionCheck();
 }
 
@@ -137,11 +145,11 @@ StateGame.prototype.CreatePlayer = function () {
 	var geometry = new THREE.BoxGeometry( 2, 4, 4 );
 	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
 	var mesh = new THREE.Mesh( geometry, material );
-	mesh.position.set( 0, 3, 0 );
+	mesh.position.set( 0, 2, 0 );
 	this._root.add( mesh );
 	this._player = mesh;
 	this._player.geometry.computeBoundingBox();
-	this._player._speed = 30;
+	this._player._speed = 40;
 
 	var light = new THREE.PointLight( 0xFFFFFF, 2, 100 );
 	light.position.set( 0, 20, 0 );
@@ -156,7 +164,7 @@ StateGame.prototype.CreatePlayer = function () {
 	console.log( camera );
 	var lookat = new THREE.Vector3( 0, -0.1, 1 );
 	camera.lookAt( lookat );
-	camera.position.set( 0, 5, 1 );
+	camera.position.set( 0, 10, -20 );
 }
 
 StateGame.prototype.CreateEnemy = function () {
@@ -218,6 +226,32 @@ StateGame.prototype.CreateEnemy = function () {
 	}
 }
 
+StateGame.prototype.CreateItem = function () {
+	var lineArr = [ 1, 1, 1 ];
+	lineArr[ THREE.Math.randInt( 0, lineArr.length - 1 ) ] = 0;
+	for( var i = 0; i < lineArr.length; i ++ ) {
+		if( lineArr[i] === 0 ) {
+			continue;
+		}
+
+		var newItemGeometry = new THREE.BoxGeometry( 2.5, 2.5, 2.5 );
+		var newItemMat = new THREE.MeshPhongMaterial( { color: 0xd5d21e, side: THREE.DoubleSide, transparent: true, overdraw: true } );
+		var newItemMesh = new THREE.Mesh( newItemGeometry, newItemMat );
+		newItemMesh.position.set( (i - 1) * LINE_WIDTH, 3, this._player.position.z + 110 );
+		this._root.add( newItemMesh );
+		this._items.push( newItemMesh );
+
+		var tween = new TWEEN.Tween( newItemMesh.rotation )
+			.to( { x: 240, y: 180, z: 300 }, 100000 )
+			.start();
+
+		newItemMesh.geometry.computeBoundingBox();
+		newItemMesh.OnCollide = function (item) {
+			
+		}
+	}
+}
+
 StateGame.prototype.ProcessInput = function (dt) {
 	if( keyboard.pressed('left') ) {
 		this._player.position.x += 30 * dt;
@@ -229,32 +263,76 @@ StateGame.prototype.ProcessInput = function (dt) {
 	}
 }
 
-StateGame.prototype.RemoveFarEnemy = function () {
+StateGame.prototype.RemoveFarObject = function () {
 	var removeList = [];
 
 	var pz = this._player.position.z;
 	for (var i = this._enemies.length - 1; i >= 0; i--) {
 		var enemy = this._enemies[i];
 		var ez = enemy.position.z;
-		if( pz - ez > 100 ) {
+		if( pz - ez > 50 ) {
 			removeList.push( enemy );
+			enemy._type = 0;
+		}
+	};
+	for (var i = this._items.length - 1; i >= 0; i--) {
+		var item = this._items[i];
+		var ez = item.position.z;
+		if( pz - ez > 50 ) {
+			removeList.push( item );
+			item._type = 1;
 		}
 	};
 
 	for (var i = removeList.length - 1; i >= 0; i--) {
 		var obj = removeList[i];
-		var index = this._enemies.indexOf( obj );
-		this._enemies.splice( index, index );
+		if( obj._type === 0 ) {
+			var index = this._enemies.indexOf( obj );
+			this._enemies.splice( index, 1 );
+		}
+		else if( obj._type === 1 ) {
+			var index = this._items.indexOf( obj );
+			this._items.splice( index, 1 );
+		}
+
+		this._root.remove( obj );
 	};
 }
 
 StateGame.prototype.CollisionCheck = function () {
 	var playerBoundingBox = this._player.geometry.boundingBox.clone();
 	playerBoundingBox.translate( this._player.position );
+
+
+	//
+	// with items
+	//
+	var removeItemList = [];
+	for (var i = this._items.length - 1; i >= 0; i--) {
+		var item = this._items[i];
+		var boundingBox = item.geometry.boundingBox.clone();
+		boundingBox.translate( item.position );
+		if( playerBoundingBox.isIntersectionBox( boundingBox ) ) {
+			item.OnCollide( item );
+			removeItemList.push( item );
+		}
+	};
+
+	for (var i = removeItemList.length - 1; i >= 0; i--) {
+		var obj = removeItemList[i];
+		var index = this._items.indexOf( obj );
+		this._items.splice( index, 1 );
+		this._root.remove( obj );
+	};
+
+
+	//
+	// with enemies
+	//
 	for (var i = this._enemies.length - 1; i >= 0; i--) {
 		var enemy = this._enemies[i];
 		var boundingBox = enemy.geometry.boundingBox.clone();
-		boundingBox.translate( enemy.position )
+		boundingBox.translate( enemy.position );
 		if( playerBoundingBox.isIntersectionBox( boundingBox ) ) {
 			this.GameOver();
 			return;
@@ -273,6 +351,7 @@ StateGame.prototype.CollisionCheck = function () {
 
 StateGame.prototype.GameOver = function () {
 	// stateManager.SetState("StateFirst");
+	console.log( 'game over' );
 }
 
 
