@@ -41,6 +41,9 @@ StateFirst.prototype.Update = function (dt) {
 
 
 var LINE_WIDTH = 10;
+var ENEMY_BLANK = 0;
+var ENEMY_WALL = 1;
+var ENEMY_BURSTER = 2;
 
 function StateGame () {
 	this._stateName = "StateGame";
@@ -58,32 +61,43 @@ StateGame.prototype = new State();
 StateGame.prototype.OnEnter = function () {
 	State.prototype.OnEnter.call( this );
 
-	var geometry = new THREE.BoxGeometry( 2, 4, 4 );
-	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
-	var mesh = new THREE.Mesh( geometry, material );
-	mesh.position.set( 0, 3, 0 );
-	this._root.add( mesh );
-	this._player = mesh;
-	this._player.geometry.computeBoundingBox();
-	this._player._speed = 20;
+	this.CreateMap();
+	this.CreatePlayer();
+}
 
-	var light = new THREE.PointLight( 0xFFFFFF, 2, 100 );
-	light.position.set( 0, 20, 0 );
-	this._player.add( light );
+StateGame.prototype.Update = function (dt) {
+	State.prototype.Update.call(this, dt);
 
+	TWEEN.update();
 
-	camera = new THREE.PerspectiveCamera(
-		75, 
-		window.innerWidth / window.innerHeight, 
-		1, 
-		1000);
-	this._player.add( camera );
-	console.log( camera );
-	var lookat = new THREE.Vector3( 0, -0.1, 1 );
-	camera.lookAt( lookat );
-	camera.position.set( 0, 5, 1 );
+	// move floor and adjust position of that
+	var offset = this._player._speed * dt;
+	this._player.position.z += offset;
+	if( this._player.position.z - this._floor.position.z > 100 ) {
+		this._floor.position.z += 100;
+	}
 
+	// leveling
+	this._speedUpTimer += dt;
+	if( this._speedUpTimer > 0.2 ) {
+		this._speedUpTimer = 0;
+		this._player._speed = Math.min( 40, this._player._speed * 1.001 );
+	}
 
+	// create enemy each time
+	this._genTimer += dt;
+	if( this._genTimer > 2.0 ) {
+		this._genTimer = 0;
+
+		this.CreateEnemy();
+	}
+
+	this.ProcessInput();
+	this.RemoveFarEnemy();
+	this.CollisionCheck();
+}
+
+StateGame.prototype.CreateMap = function () {
 	// create floor
 	var floor = new THREE.Object3D();
 	this._root.add( floor );
@@ -103,7 +117,7 @@ StateGame.prototype.OnEnter = function () {
 	var sidePlaneGeometry = new THREE.PlaneGeometry( 400, 1000 );
 	var sidePlaneMaterial = new THREE.MeshLambertMaterial( { color: 0xffffff, side: THREE.DoubleSide } );
 	var sidePlaneMesh = new THREE.Mesh( sidePlaneGeometry, sidePlaneMaterial );
-	sidePlaneMesh.position.y += 0.001;
+	sidePlaneMesh.position.y += 0.1;
 	sidePlaneMesh.rotateX( THREE.Math.degToRad( 90 ) );
 	var sidePlaneMesh2 = sidePlaneMesh.clone();
 	sidePlaneMesh.position.x += -(200 + LINE_WIDTH * 1.5);
@@ -112,28 +126,92 @@ StateGame.prototype.OnEnter = function () {
 	floor.add( sidePlaneMesh2 );
 }
 
-StateGame.prototype.Update = function (dt) {
-	State.prototype.Update.call(this, dt);
+StateGame.prototype.CreatePlayer = function () {
+	var geometry = new THREE.BoxGeometry( 2, 4, 4 );
+	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
+	var mesh = new THREE.Mesh( geometry, material );
+	mesh.position.set( 0, 3, 0 );
+	this._root.add( mesh );
+	this._player = mesh;
+	this._player.geometry.computeBoundingBox();
+	this._player._speed = 30;
 
-	var offset = this._player._speed * dt;
-	this._player.position.z += offset;
-	if( this._player.position.z - this._floor.position.z > 100 ) {
-		this._floor.position.z += 100;
+	var light = new THREE.PointLight( 0xFFFFFF, 2, 100 );
+	light.position.set( 0, 20, 0 );
+	this._player.add( light );
+
+	camera = new THREE.PerspectiveCamera(
+		75, 
+		window.innerWidth / window.innerHeight, 
+		1, 
+		1000);
+	this._player.add( camera );
+	console.log( camera );
+	var lookat = new THREE.Vector3( 0, -0.1, 1 );
+	camera.lookAt( lookat );
+	camera.position.set( 0, 5, 1 );
+}
+
+StateGame.prototype.CreateEnemy = function () {
+	// make sure that create enemy each type
+	var lineArr = [ -1, -1, -1 ];
+	var type = lineArr.length - 1;
+	while (true) {
+		var line = THREE.Math.randInt( 0, 2 );
+		if( lineArr[line] === -1 ) {
+			lineArr[line] = type;
+			type--;
+		}
+
+		var count = 0;
+		for( var i = 0; i < lineArr.length; i ++ ) {
+			if( lineArr[i] === -1 ) {
+				count ++;
+			}
+		}
+
+		if( count === 0 ) {
+			break;
+		}
 	}
 
-	this._speedUpTimer += dt;
-	if( this._speedUpTimer > 0.2 ) {
-		this._speedUpTimer = 0;
-		this._player._speed = Math.min( 40, this._player._speed * 1.001 );
+	// now create enemy!
+	for( var i = 0; i < lineArr.length; i ++ ) {
+		if( lineArr[i] === 0 ) {
+			continue;
+		}
+
+		var pos = this._player.position;
+		var geometry = new THREE.BoxGeometry( LINE_WIDTH, 30, 1 );
+		var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
+		var enemy = new THREE.Mesh( geometry, material );
+		enemy.position.set( (i - 1) * LINE_WIDTH, 15, pos.z + 200 );
+		this._root.add( enemy );
+		enemy._type = lineArr[i];
+
+		if( lineArr[i] === ENEMY_BURSTER ) {
+			// below code should be changed.... in later....
+			enemy.position.y = -25;
+			enemy.Burst = function (enemy) {
+				var newPos = enemy.position.clone();
+				newPos.y += 40;
+
+				var tween = new TWEEN.Tween( enemy.position )
+					.to( newPos, 1000 )
+					.easing( TWEEN.Easing.Elastic.InOut )
+					.start();
+
+            	enemy._bursted = true;
+			}
+			enemy._bursted = false;
+		}
+
+		this._enemies.push( enemy );
+		geometry.computeBoundingBox();
 	}
+}
 
-	this._genTimer += dt;
-	if( this._genTimer > 1.0 ) {
-		this._genTimer = 0;
-
-		this.CreateEnemy();
-	}
-
+StateGame.prototype.ProcessInput = function () {
 	if( keyboard.pressed('left') ) {
 		this._player.position.x += 30 * dt;
 		this._player.position.x = Math.min( LINE_WIDTH * 1.5, this._player.position.x );
@@ -141,31 +219,6 @@ StateGame.prototype.Update = function (dt) {
 	if( keyboard.pressed('right') ) {
 		this._player.position.x += -30 * dt;
 		this._player.position.x = Math.max( -LINE_WIDTH * 1.5, this._player.position.x );
-	}
-
-	this.RemoveFarEnemy();
-	this.CollisionCheck();
-}
-
-StateGame.prototype.CreateEnemy = function () {
-	var line = [ 1, 1, 1 ];
-	var blankLine = THREE.Math.randInt( 0, 2 );
-	line[ blankLine ] = 0;
-
-	for( var i = 0; i < line.length; i ++ ) {
-		if( line[i] === 0 ) {
-			continue;
-		}
-
-		var pos = this._player.position;
-		var geometry = new THREE.BoxGeometry( LINE_WIDTH, 30, 1 );
-		var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
-		var mesh = new THREE.Mesh( geometry, material );
-		mesh.position.set( (i - 1) * LINE_WIDTH, 15, pos.z + 200 );
-		this._root.add( mesh );
-
-		this._enemies.push( mesh );
-		geometry.computeBoundingBox();
 	}
 }
 
@@ -197,6 +250,16 @@ StateGame.prototype.CollisionCheck = function () {
 		boundingBox.translate( enemy.position )
 		if( playerBoundingBox.isIntersectionBox( boundingBox ) ) {
 			this.GameOver();
+			return;
+		}
+	};
+
+	for (var i = this._enemies.length - 1; i >= 0; i--) {
+		var enemy = this._enemies[i];
+		if( enemy._type === 2 && ! enemy._bursted ) {
+			if( enemy.position.z - this._player.position.z < 65 ) {
+				enemy.Burst( enemy );
+			}
 		}
 	};
 }
@@ -292,7 +355,7 @@ ProcessKeyInput = function (keyboard) {
 
 
 Init();
-CreateAxis(scene);
+// CreateAxis(scene);
 
 var keyboard = new THREEx.KeyboardState();
 var stateManager = new StateManager();
