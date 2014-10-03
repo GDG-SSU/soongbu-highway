@@ -54,6 +54,7 @@ function StateGame () {
 	this._itemGenTimer = 0;
 	this._genTimer = 0;
 	this._player = undefined;
+	this._effect = undefined;
 
 	this._enemies = [];
 	this._items = [];
@@ -67,6 +68,7 @@ StateGame.prototype.OnEnter = function () {
 
 	this.CreateMap();
 	this.CreatePlayer();
+	this.CreateEffectPlane();
 }
 
 StateGame.prototype.Update = function (dt) {
@@ -154,6 +156,53 @@ StateGame.prototype.CreateMap = function () {
 	var side2 = side.clone();
 	side2.position.x = -15;
 	floor.add(side2);
+}
+
+var collided = false;
+StateGame.prototype.CreateEffectPlane = function () {
+	var pos = globalPlayer.position;
+
+	var effect_texture = new THREE.ImageUtils.loadTexture( 'resources/textures/effect_hit.png' );
+	effect_texture.wrapS = THREE.RepeatWrapping;
+	effect_texture.wrapT = THREE.RepeatWrapping;
+	effect_texture.repeat.set( 1, 1 );
+
+	var effect_texture2 = new THREE.ImageUtils.loadTexture( 'resources/textures/floor_light.png' );
+	effect_texture2.wrapS = THREE.RepeatWrapping;
+	effect_texture2.wrapT = THREE.RepeatWrapping;
+	effect_texture2.repeat.set( 1, 1 );
+
+	var geometry = new THREE.PlaneGeometry( 8, 17 );
+	var material = new THREE.MeshPhongMaterial( {map:effect_texture, transparent: true, side: THREE.DoubleSide, opacity:0} );
+	this._effect = new THREE.Mesh( geometry, material );
+	this._effect.effect_texture = effect_texture;
+	this._effect.effect_texture2 = effect_texture2;
+	// plane.rotateY(THREE.Math.degToRad(90));
+	this._effect.rotateZ(THREE.Math.degToRad(90));
+	this._effect.position.set(0,4,pos.z - 4);
+
+	this._effect.showEffect = function(effect, length){
+		/* effect
+		*	1. hit
+		*	2. coin
+		*/
+
+		// var geometry = new THREE.PlaneGeometry( 15, 20 );
+		// var material = new THREE.MeshBasicMaterial( {map: texture, transparent: true, side: THREE.DoubleSide, opacity:0.8} );
+		// this._effect = new THREE.Mesh( geometry, material );
+		// var material = new THREE.MeshPhongMaterial( {map: effect_texture, transparent: true, side: THREE.DoubleSide, opacity:0.5} );
+		// this.material = material;
+		this.material.map = effect_texture;
+		this.material.opacity = 0.9;
+		//this.material.opacity = 0.1;
+
+		// console.log(this);
+
+		var tween = new TWEEN.Tween( this.material )
+			.to( { opacity: 0 }, length )
+			.start();
+	}
+	globalPlayer.add(this._effect);
 }
 
 StateGame.prototype.CreatePlayer = function () {
@@ -433,6 +482,7 @@ StateGame.prototype.RemoveFarClimate = function () {
 
 StateGame.prototype.GameOver = function () {
 	// stateManager.SetState("StateFirst");
+	this._effect.showEffect('hit', 500);
 	console.log( 'game over' );
 }
 
