@@ -21,6 +21,8 @@ State.prototype = {
 
 function StateFirst () {
 	this._stateName = "StateFirst";
+
+	this._mcamCounter = 0;
 }
 
 StateFirst.prototype = new State();
@@ -28,16 +30,85 @@ StateFirst.prototype = new State();
 StateFirst.prototype.OnEnter = function () {
 	State.prototype.OnEnter.call( this );
 
-	var geometry = new THREE.BoxGeometry( 5, 5, 5 );
-	var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
-	var mesh = new THREE.Mesh( geometry, material );
-	this._root.add( mesh );
-	this._cube = mesh;
+	this.SetCamera();
+	this.CreateMap();
 }
 
 StateFirst.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
+
+	this.MoveCamera();
 }
+
+StateFirst.prototype.SetCamera = function(){
+	camera = new THREE.PerspectiveCamera(
+		75, 
+		window.innerWidth / window.innerHeight, 
+		1, 
+		1000);
+	console.log( camera );
+	var lookat = new THREE.Vector3( 0, -20, 22 );
+	camera.lookAt( lookat );
+	camera.position.set( 0, 10, 10 );
+	scene.add( camera );
+}
+
+StateFirst.prototype.CreateMap = function () {
+	// create floor
+	var floor = new THREE.Object3D();
+	this._root.add( floor );
+	this._floor = floor;
+
+	var floorTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/floor_light.png' );
+	floorTexture.wrapS = THREE.RepeatWrapping;
+	floorTexture.wrapT = THREE.RepeatWrapping;
+	floorTexture.repeat.set( 1, 5 );
+	var geometry = new THREE.PlaneGeometry( 30, 500 );
+	var material = new THREE.MeshBasicMaterial( {map: floorTexture, side: THREE.DoubleSide, transparent: true, overdraw: true} );
+	var plane = new THREE.Mesh( geometry, material );
+	plane.rotateX(THREE.Math.degToRad(90));
+
+	floor.add( plane );
+
+	var sideTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/wall_direction.png' );
+	sideTexture.wrapS = THREE.RepeatWrapping;
+	sideTexture.wrapT = THREE.RepeatWrapping;
+	sideTexture.repeat.set( 1, 50 );
+	geometry = new THREE.PlaneGeometry( 5, 500 );
+	material = new THREE.MeshPhongMaterial( { map: sideTexture, side: THREE.DoubleSide, transparent: true, overdraw: true } );
+	side = new THREE.Mesh( geometry, material );
+	side.rotateX(THREE.Math.degToRad(90));
+
+	side.rotateY(THREE.Math.degToRad(90));
+	side.position.y = 5;
+	side.position.x = 15;
+	floor.add(side);
+
+	var side2 = side.clone();
+	side2.position.x = -15;
+	floor.add(side2);
+
+	var titleTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/title.png' );
+	titleTexture.wrapS = THREE.RepeatWrapping;
+	titleTexture.wrapT = THREE.RepeatWrapping;
+	titleTexture.repeat.set( 1, 1 );
+	var geometry = new THREE.PlaneGeometry( 8, 8 );
+	var material = new THREE.MeshBasicMaterial( {map: titleTexture, side: THREE.DoubleSide, transparent: true, overdraw: true} );
+	var title = new THREE.Mesh( geometry, material );
+
+	title.position.set(0,0,-5);
+	//title.rotateY(THREE.Math.degToRad(180));
+
+	camera.add( title );
+}
+
+StateFirst.prototype.MoveCamera = function(){
+	this._mcamCounter += 0.02;
+	camera.position.y = 10 + Math.sin(this._mcamCounter) * 1;
+}
+
+
+
 
 
 var LINE_WIDTH = 10;
@@ -56,6 +127,8 @@ function StateGame () {
 	this._genTimer = 0;
 	this._player = undefined;
 	this._effect = undefined;
+	this._liveTime = 0;
+	this._coinCount = 0;
 
 	this._enemies = [];
 	this._items = [];
@@ -71,8 +144,13 @@ StateGame.prototype.OnEnter = function () {
 	this.CreateMap();
 	this.CreatePlayer();
 	this.CreateEffectPlane();
+
+	var ui_score = document.getElementById('score');
+	this._labelScore = ui_score;
 }
 
+var TotalScore = 0;
+var currScore = 0;
 StateGame.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
 
@@ -80,6 +158,12 @@ StateGame.prototype.Update = function (dt) {
 	if ( controls !== undefined ) {
 		controls.update();
 	}
+
+	this._liveTime += dt;
+	TotalScore = parseInt(this._liveTime) * 100 + this._coinCount * 200;
+	currScore += (TotalScore - currScore) / 10;
+	this._labelScore.innerHTML = "Score : " + parseInt(currScore + 1);
+
 
 	// move floor and adjust position of that
 	var speed = 50 * dt;
@@ -460,7 +544,7 @@ StateGame.prototype.CreateItem = function () {
 		}
 
 		item.OnCollide = function (item) {
-
+			stateManager._curr._coinCount++;
 		}
 
 		item.position.set( (i - 1) * LINE_WIDTH, 3, this._player.position.z + 110 );
@@ -666,7 +750,7 @@ StateManager.prototype = {
 
 
 var scene, camera, clock, renderer;
-var stereoEffect, CardBoardSystemOn = false;
+var stereoEffect, CardBoardSystemOn = true;
 
 function Init () {
 	scene = new THREE.Scene();
@@ -739,7 +823,7 @@ Init();
 
 var keyboard = new THREEx.KeyboardState();
 var stateManager = new StateManager();
-stateManager.SetState("StateGame");
+stateManager.SetState("StateFirst");
 
 var render = function () {
 	requestAnimationFrame(render);

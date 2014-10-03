@@ -5,11 +5,35 @@
 			html, body{
 				margin: 0;
 				padding: 0;
+
+				height: 100%;
 			}
-			canvas { width: 100%; height: 100% }
+
+			.container-full{
+				width: 100%;
+				height: 100%;
+
+				position: absolute;;
+				left: 0px;
+				top: 0px;
+
+				color: #ffffff;
+			}
+
+			.left-top{
+				margin-left: 15px;
+				margin-top: 15px;
+			}
 		</style>
 	</head>
 	<body>
+
+		<div class="container-full">
+			<div id="score" class="left-top">
+				Score : 100
+			</div>
+		</div>
+
 		<script src="library/tween.js"></script>
 		<script src="library/three.js"></script>
 		<script src="library/StereoEffect.js"></script>
