@@ -281,16 +281,26 @@ StateGame.prototype.CreateItem = function () {
 			continue;
 		}
 
+		var coinTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/coin.png' );
 		var newItemGeometry = new THREE.BoxGeometry( 2.5, 2.5, 2.5 );
-		var newItemMat = new THREE.MeshPhongMaterial( { color: 0xd5d21e, side: THREE.DoubleSide, transparent: true, overdraw: true } );
+		var newItemMat = new THREE.MeshPhongMaterial( { map: coinTexture, side: THREE.DoubleSide, transparent: true, overdraw: true } );
 		var newItemMesh = new THREE.Mesh( newItemGeometry, newItemMat );
 		newItemMesh.position.set( (i - 1) * LINE_WIDTH, 3, this._player.position.z + 110 );
 		this._root.add( newItemMesh );
 		this._items.push( newItemMesh );
 
-		var tween = new TWEEN.Tween( newItemMesh.rotation )
-			.to( { x: 240, y: 180, z: 300 }, 100000 )
-			.start();
+		var values_x = [ 240, -240 ];
+		var values_y = [ 180, -180 ];
+		var values_z = [ 300, -300 ];
+		var tween = new TWEEN.Tween( newItemMesh.rotation );
+		tween.to( 
+			{ 
+				x: values_x[ THREE.Math.randInt(0, values_x.length - 1) ], 
+				y: values_y[ THREE.Math.randInt(0, values_y.length - 1) ], 
+				z: values_z[ THREE.Math.randInt(0, values_z.length - 1) ]
+			}, 
+			THREE.Math.randInt( 130000, 150000 ) );
+		tween.start();
 
 		newItemMesh.geometry.computeBoundingBox();
 		newItemMesh.OnCollide = function (item) {
