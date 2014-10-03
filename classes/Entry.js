@@ -90,7 +90,7 @@ StateGame.prototype.Update = function (dt) {
 	this._player.position.x = Math.max( -LINE_WIDTH * 1.5, this._player.position.x );
 
 	if( this._player.position.z - this._floor.position.z > 100 ) {
-		this._floor.position.z += 100;
+		this._floor.position.z += 50;
 	}
 
 	// leveling
@@ -238,42 +238,55 @@ StateGame.prototype.CreateEffectPlane = function () {
 	effect_texture2.wrapT = THREE.RepeatWrapping;
 	effect_texture2.repeat.set( 1, 1 );
 
-	var geometry = new THREE.PlaneGeometry( 8, 17 );
+	var geoHeight = 1.6;
+	var geoWidth = geoHeight * camera.aspect;
+
+	var geometry = new THREE.PlaneGeometry( geoHeight, geoWidth );
 	var material = new THREE.MeshPhongMaterial( {map:effect_texture, transparent: true, side: THREE.DoubleSide, opacity:0} );
 	this._effect = new THREE.Mesh( geometry, material );
 	this._effect.effect_texture = effect_texture;
 	this._effect.effect_texture2 = effect_texture2;
-	// plane.rotateY(THREE.Math.degToRad(90));
+
 	this._effect.rotateZ(THREE.Math.degToRad(90));
-	this._effect.position.set(0,4,pos.z - 4);
+	this._effect.position.set(0,0,pos.z - 1.01);
 
 	this._effect.showEffect = function(effect, length){
 		/* effect
 		*	1. hit
 		*	2. coin
 		*/
-
-		// var geometry = new THREE.PlaneGeometry( 15, 20 );
-		// var material = new THREE.MeshBasicMaterial( {map: texture, transparent: true, side: THREE.DoubleSide, opacity:0.8} );
-		// this._effect = new THREE.Mesh( geometry, material );
-		// var material = new THREE.MeshPhongMaterial( {map: effect_texture, transparent: true, side: THREE.DoubleSide, opacity:0.5} );
-		// this.material = material;
 		this.material.map = effect_texture;
 		this.material.opacity = 0.9;
-		//this.material.opacity = 0.1;
-
-		// console.log(this);
 
 		var tween = new TWEEN.Tween( this.material )
 			.to( { opacity: 0 }, length )
 			.start();
 	}
-	globalPlayer.add(this._effect);
+
+	this._effect.shakeCamera = function(length){
+		var scope = 10;
+		var tween = new TWEEN.Tween( camera.position )
+			.to( { x: 0, y: 5 }, length )
+			.onUpdate(function () {
+				camera.position.x = THREE.Math.randInt(1, scope) - (scope / 2);
+				camera.position.y = THREE.Math.randInt(1, scope) - (scope / 2) + 5;
+				if (scope > 2) {
+					scope--;
+				}
+			})
+			.onComplete(function() {
+				camera.position.x = 0;
+				camera.position.y = 5;
+			})
+			.start();
+	}
+	
+	camera.add(this._effect);
 }
 
 StateGame.prototype.CreatePlayer = function () {
 	var geometry = new THREE.BoxGeometry( 2, 4, 4 );
-	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00 } );
+	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00, transparent: true, opacity: 0 } );
 	var mesh = new THREE.Mesh( geometry, material );
 	mesh.position.set( 0, 2, 0 );
 	this._root.add( mesh );
@@ -555,6 +568,7 @@ StateGame.prototype.RemoveFarClimate = function () {
 StateGame.prototype.GameOver = function () {
 	// stateManager.SetState("StateFirst");
 	this._effect.showEffect('hit', 500);
+	this._effect.shakeCamera(250);
 	console.log( 'game over' );
 }
 
@@ -618,7 +632,7 @@ function Init () {
 	camera.position.set( 15, 15, 15 );
 	camera.lookAt( scene.position );
 
-	renderer = new THREE.WebGLRenderer();
+	renderer = new THREE.WebGLRenderer({ antialiasing: true });
 	renderer.setClearColor( 0x000000, 1.0 ); // the default
 	renderer.setSize(window.innerWidth - 10, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
