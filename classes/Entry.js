@@ -65,6 +65,7 @@ StateGame.prototype = new State();
 StateGame.prototype.OnEnter = function () {
 	State.prototype.OnEnter.call( this );
 
+	this.CreateObjectPool();
 	this.CreateMap();
 	this.CreatePlayer();
 }
@@ -118,6 +119,34 @@ StateGame.prototype.Update = function (dt) {
 	this.ProcessInput(dt);
 	this.RemoveFarObject();
 	this.CollisionCheck();
+}
+
+StateGame.prototype.CreateObjectPool = function () {
+	var op = {
+		_coins: [],
+		_enemies: [],
+		_coinTexture: new THREE.ImageUtils.loadTexture( 'resources/textures/coin.png' ),
+
+		BorrowCoin: function () {
+			if( this._coins.length === 0 ) {
+				var coinGeometry = new THREE.BoxGeometry( 2.5, 2.5, 2.5 );
+				var coinMat = new THREE.MeshPhongMaterial( { map: op._coinTexture, side: THREE.DoubleSide, transparent: true, overdraw: true } );
+				var coinMesh = new THREE.Mesh( coinGeometry, coinMat );
+				coinGeometry.computeBoundingBox();
+				this._coins.push( coinMesh );
+			}
+
+			var ret = this._coins[ this._coins.length - 1 ];
+			this._coins.pop();
+
+			return ret;
+		},
+		PayBackCoin: function (obj) {
+			this._coins.push( obj );
+		}
+	};
+
+	this._objectPool = op;
 }
 
 StateGame.prototype.CreateMap = function () {
@@ -281,18 +310,23 @@ StateGame.prototype.CreateItem = function () {
 			continue;
 		}
 
-		var coinTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/coin.png' );
-		var newItemGeometry = new THREE.BoxGeometry( 2.5, 2.5, 2.5 );
-		var newItemMat = new THREE.MeshPhongMaterial( { map: coinTexture, side: THREE.DoubleSide, transparent: true, overdraw: true } );
-		var newItemMesh = new THREE.Mesh( newItemGeometry, newItemMat );
-		newItemMesh.position.set( (i - 1) * LINE_WIDTH, 3, this._player.position.z + 110 );
-		this._root.add( newItemMesh );
-		this._items.push( newItemMesh );
+		var item = this._objectPool.BorrowCoin();
+		if( item.tween !== undefined ) {
+			item.tween.stop();
+		}
+
+		item.OnCollide = function (item) {
+			
+		}
+
+		item.position.set( (i - 1) * LINE_WIDTH, 3, this._player.position.z + 110 );
+		this._root.add( item );
+		this._items.push( item );
 
 		var values_x = [ 240, -240 ];
 		var values_y = [ 180, -180 ];
 		var values_z = [ 300, -300 ];
-		var tween = new TWEEN.Tween( newItemMesh.rotation );
+		var tween = new TWEEN.Tween( item.rotation );
 		tween.to( 
 			{ 
 				x: values_x[ THREE.Math.randInt(0, values_x.length - 1) ], 
@@ -301,11 +335,7 @@ StateGame.prototype.CreateItem = function () {
 			}, 
 			THREE.Math.randInt( 130000, 150000 ) );
 		tween.start();
-
-		newItemMesh.geometry.computeBoundingBox();
-		newItemMesh.OnCollide = function (item) {
-			
-		}
+		item.tween = tween;
 	}
 }
 
@@ -354,6 +384,7 @@ StateGame.prototype.RemoveFarObject = function () {
 		else if( obj._type === 1 ) {
 			var index = this._items.indexOf( obj );
 			this._items.splice( index, 1 );
+			this._objectPool.PayBackCoin( obj );
 		}
 
 		this._root.remove( obj );
@@ -384,6 +415,7 @@ StateGame.prototype.CollisionCheck = function () {
 		var index = this._items.indexOf( obj );
 		this._items.splice( index, 1 );
 		this._root.remove( obj );
+		this._objectPool.PayBackCoin( obj );
 	};
 
 
