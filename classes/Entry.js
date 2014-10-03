@@ -58,7 +58,7 @@ function StateGame () {
 
 	this._enemies = [];
 	this._items = [];
-	this._climate = [];
+	this._climates = [];
 }
 
 StateGame.prototype = new State();
@@ -66,6 +66,7 @@ StateGame.prototype = new State();
 StateGame.prototype.OnEnter = function () {
 	State.prototype.OnEnter.call( this );
 
+	this.CreateObjectPool();
 	this.CreateMap();
 	this.CreatePlayer();
 	this.CreateEffectPlane();
@@ -120,6 +121,71 @@ StateGame.prototype.Update = function (dt) {
 	this.ProcessInput(dt);
 	this.RemoveFarObject();
 	this.CollisionCheck();
+}
+
+StateGame.prototype.CreateObjectPool = function () {
+	var op = {
+		_coins: [],
+		_enemies: [],
+		_climates: [],
+		_coinTexture: new THREE.ImageUtils.loadTexture( 'resources/textures/coin.png' ),
+
+		BorrowCoin: function () {
+			if( this._coins.length === 0 ) {
+				var coinGeometry = new THREE.BoxGeometry( 2.5, 2.5, 2.5 );
+				var coinMat = new THREE.MeshPhongMaterial( { map: op._coinTexture, side: THREE.DoubleSide, transparent: true, overdraw: true } );
+				var coinMesh = new THREE.Mesh( coinGeometry, coinMat );
+				coinGeometry.computeBoundingBox();
+				this._coins.push( coinMesh );
+			}
+
+			var ret = this._coins[ this._coins.length - 1 ];
+			this._coins.pop();
+
+			return ret;
+		},
+		PayBackCoin: function (obj) {
+			this._coins.push( obj );
+		},
+
+		BorrowEnemy: function () {
+			if( this._enemies.length === 0 ) {
+				var enemyGeometry = new THREE.BoxGeometry( LINE_WIDTH, 30, 1 );
+				var enemyMat = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
+				var enemyMesh = new THREE.Mesh( enemyGeometry, enemyMat );
+				enemyGeometry.computeBoundingBox();
+
+				this._enemies.push( enemyMesh );
+			}
+
+			var ret = this._enemies[ this._enemies.length - 1 ];
+			this._enemies.pop();
+
+			return ret;
+		},
+		PayBackEnemy: function (obj) {
+			this._enemies.push( obj );
+		},
+
+		BorrowClimate: function () {
+			if( this._climates.length === 0 ) {
+				var geometry = new THREE.BoxGeometry( .1, .1, THREE.Math.randInt(1, 4) );
+				var material = new THREE.MeshBasicMaterial( { color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: THREE.Math.randInt(0, 5) / 40 } );
+				var mesh = new THREE.Mesh( geometry, material );
+				this._climates.push( mesh );
+			}
+
+			var ret = this._climates[ this._climates.length - 1 ];
+			this._climates.pop();
+
+			return ret;
+		},
+		PayBackClimate: function (obj) {
+			this._climates.push( obj );
+		}
+	};
+
+	this._objectPool = op;
 }
 
 StateGame.prototype.CreateMap = function () {
@@ -255,12 +321,10 @@ StateGame.prototype.CreatePlayer = function () {
 
 StateGame.prototype.CreateClimate = function () {
 	var pos = this._player.position;
-	var geometry = new THREE.BoxGeometry( .1, .1, THREE.Math.randInt(1, 4) );
-	var material = new THREE.MeshBasicMaterial( { color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: THREE.Math.randInt(0, 5) / 40 } );
-	var wind = new THREE.Mesh( geometry, material );
+	var wind = this._objectPool.BorrowClimate();
 	wind.position.set( THREE.Math.randInt(0, 30) - 15, THREE.Math.randInt(3, 12), pos.z + 20 );
 	this._root.add( wind );
-	this._climate.push( wind );
+	this._climates.push( wind );
 }
 
 StateGame.prototype.CreateEnemy = function () {
@@ -293,12 +357,10 @@ StateGame.prototype.CreateEnemy = function () {
 		}
 
 		var pos = this._player.position;
-		var geometry = new THREE.BoxGeometry( LINE_WIDTH, 30, 1 );
-		var material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
-		var enemy = new THREE.Mesh( geometry, material );
+		var enemy = this._objectPool.BorrowEnemy();
 		enemy.position.set( (i - 1) * LINE_WIDTH, 15, pos.z + 200 );
-		this._root.add( enemy );
 		enemy._type = lineArr[i];
+		this._root.add( enemy );
 
 		if( lineArr[i] === ENEMY_BURSTER ) {
 			// below code should be changed.... in later....
@@ -307,10 +369,15 @@ StateGame.prototype.CreateEnemy = function () {
 				var newPos = enemy.position.clone();
 				newPos.y += 40;
 
+				if( enemy.tween !== undefined ) {
+					enemy.tween.stop();
+				}
+
 				var tween = new TWEEN.Tween( enemy.position )
 					.to( newPos, 1000 )
 					.easing( TWEEN.Easing.Elastic.InOut )
 					.start();
+				enemy.tween = tween;
 
             	enemy._bursted = true;
 			}
@@ -318,7 +385,6 @@ StateGame.prototype.CreateEnemy = function () {
 		}
 
 		this._enemies.push( enemy );
-		geometry.computeBoundingBox();
 	}
 }
 
@@ -330,18 +396,23 @@ StateGame.prototype.CreateItem = function () {
 			continue;
 		}
 
-		var coinTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/coin.png' );
-		var newItemGeometry = new THREE.BoxGeometry( 2.5, 2.5, 2.5 );
-		var newItemMat = new THREE.MeshPhongMaterial( { map: coinTexture, side: THREE.DoubleSide, transparent: true, overdraw: true } );
-		var newItemMesh = new THREE.Mesh( newItemGeometry, newItemMat );
-		newItemMesh.position.set( (i - 1) * LINE_WIDTH, 3, this._player.position.z + 110 );
-		this._root.add( newItemMesh );
-		this._items.push( newItemMesh );
+		var item = this._objectPool.BorrowCoin();
+		if( item.tween !== undefined ) {
+			item.tween.stop();
+		}
+
+		item.OnCollide = function (item) {
+
+		}
+
+		item.position.set( (i - 1) * LINE_WIDTH, 3, this._player.position.z + 110 );
+		this._root.add( item );
+		this._items.push( item );
 
 		var values_x = [ 240, -240 ];
 		var values_y = [ 180, -180 ];
 		var values_z = [ 300, -300 ];
-		var tween = new TWEEN.Tween( newItemMesh.rotation );
+		var tween = new TWEEN.Tween( item.rotation );
 		tween.to( 
 			{ 
 				x: values_x[ THREE.Math.randInt(0, values_x.length - 1) ], 
@@ -350,11 +421,7 @@ StateGame.prototype.CreateItem = function () {
 			}, 
 			THREE.Math.randInt( 130000, 150000 ) );
 		tween.start();
-
-		newItemMesh.geometry.computeBoundingBox();
-		newItemMesh.OnCollide = function (item) {
-			
-		}
+		item.tween = tween;
 	}
 }
 
@@ -399,10 +466,12 @@ StateGame.prototype.RemoveFarObject = function () {
 		if( obj._type === 0 ) {
 			var index = this._enemies.indexOf( obj );
 			this._enemies.splice( index, 1 );
+			this._objectPool.PayBackEnemy( obj );
 		}
 		else if( obj._type === 1 ) {
 			var index = this._items.indexOf( obj );
 			this._items.splice( index, 1 );
+			this._objectPool.PayBackCoin( obj );
 		}
 
 		this._root.remove( obj );
@@ -433,6 +502,7 @@ StateGame.prototype.CollisionCheck = function () {
 		var index = this._items.indexOf( obj );
 		this._items.splice( index, 1 );
 		this._root.remove( obj );
+		this._objectPool.PayBackCoin( obj );
 	};
 
 
@@ -463,8 +533,8 @@ StateGame.prototype.RemoveFarClimate = function () {
 	var removeList = [];
 
 	var pz = this._player.position.z;
-	for (var i = this._climate.length - 1; i >= 0; i--) {
-		var climate = this._climate[i];
+	for (var i = this._climates.length - 1; i >= 0; i--) {
+		var climate = this._climates[i];
 		var ez = climate.position.z;
 		if( pz - ez > 100 ) {
 			removeList.push( climate );
@@ -475,8 +545,10 @@ StateGame.prototype.RemoveFarClimate = function () {
 
 	for (var i = removeList.length - 1; i >= 0; i--) {
 		var obj = removeList[i];
-		var index = this._climate.indexOf( obj );
-		this._climate.splice( index, index );
+		var index = this._climates.indexOf( obj );
+		this._climates.splice( index, 1 );
+		this._root.remove( obj );
+		this._objectPool.PayBackClimate( obj );
 	};
 }
 
