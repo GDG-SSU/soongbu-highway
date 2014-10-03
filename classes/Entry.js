@@ -1,6 +1,7 @@
 // define State class
 function State () {
 	this._stateName = "";
+	this._elapsedTime = 0;
 }
 
 State.prototype = {
@@ -14,7 +15,7 @@ State.prototype = {
 	},
 
 	Update: function(dt) {
-
+		this._elapsedTime += dt;
 	}
 };
 
@@ -704,6 +705,92 @@ StateGame.prototype.GameOver = function () {
 
 
 
+function StateResult () {
+	this._stateName = "StateResult";
+}
+
+StateResult.prototype = new State();
+
+StateResult.prototype.OnEnter = function () {
+	State.prototype.OnEnter.call( this );
+
+	camera = new THREE.PerspectiveCamera(
+		75, 
+		window.innerWidth / window.innerHeight, 
+		1, 
+		1000);
+	camera.lookAt( new THREE.Vector3( 0, 0, -1 ) );
+	camera.position.set( -30, 20, 0 );
+	camera.rotation.y = THREE.Math.degToRad( 210 );
+	
+	var light = new THREE.PointLight( 0xFFFFFF, 3, 150 );
+	light.position.set( 0, 0, 0 );
+	this._root.add( light );
+
+	this.CreateMap();
+
+	var labelSize = 10;
+	var labelGeometry = new THREE.TextGeometry( 'Score : ' + TotalScore, { size: labelSize, height: 1, font: 'helvetiker' } );
+	var labelMaterial = new THREE.MeshLambertMaterial( {
+		color: 0x999999,
+	} );
+	var labelMesh = new THREE.Mesh( labelGeometry, labelMaterial );
+	labelMesh.rotateY( THREE.Math.degToRad( 230 ) );
+	labelMesh.position.set( 0, 10, 50 );
+	this._root.add( labelMesh );
+	this._scoreLabel = labelMesh;
+}
+
+StateResult.prototype.Update = function (dt) {
+	State.prototype.Update.call(this, dt);
+
+	this._floor.position.z -= 70 * dt;
+	if( this._floor.position.z < -100 ) {
+		this._floor.position.z = 0;
+	}
+
+	var x = Math.sin( this._elapsedTime ) * 5 + 40;
+	var y = Math.cos( this._elapsedTime ) * 6 + 18;
+	this._scoreLabel.position.x = x;
+	this._scoreLabel.position.y = y;
+}
+
+StateResult.prototype.CreateMap = function () {
+		// create floor
+	var floor = new THREE.Object3D();
+	this._root.add( floor );
+	this._floor = floor;
+
+	var floorTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/floor_light.png' );
+	floorTexture.wrapS = THREE.RepeatWrapping;
+	floorTexture.wrapT = THREE.RepeatWrapping;
+	floorTexture.repeat.set( 1, 10 );
+	var geometry = new THREE.PlaneGeometry( 30, 1000 );
+	var material = new THREE.MeshBasicMaterial( {map: floorTexture, side: THREE.DoubleSide, transparent: true, overdraw: true} );
+	var plane = new THREE.Mesh( geometry, material );
+	plane.rotateX(THREE.Math.degToRad(90));
+
+	floor.add( plane );
+
+	var sideTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/wall_direction.png' );
+	sideTexture.wrapS = THREE.RepeatWrapping;
+	sideTexture.wrapT = THREE.RepeatWrapping;
+	sideTexture.repeat.set( 1, 100 );
+	geometry = new THREE.PlaneGeometry( 5, 1000 );
+	material = new THREE.MeshPhongMaterial( { map: sideTexture, side: THREE.DoubleSide, transparent: true, overdraw: true } );
+	side = new THREE.Mesh( geometry, material );
+	side.rotateX(THREE.Math.degToRad(90));
+
+	side.rotateY(THREE.Math.degToRad(90));
+	side.position.y = 5;
+	side.position.x = 15;
+	floor.add(side);
+
+	var side2 = side.clone();
+	side2.position.x = -15;
+	floor.add(side2);
+}
+
 
 function StateManager() {
 	var _curr = undefined;
@@ -738,6 +825,9 @@ StateManager.prototype = {
 		}
 		else if( stateName === "StateGame" ) {
 			state = new StateGame();
+		}
+		else if( stateName === "StateResult" ) {
+			state = new StateResult();
 		}
 
 		return state;
