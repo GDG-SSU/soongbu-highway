@@ -45,6 +45,7 @@ var ENEMY_BLANK = 0;
 var ENEMY_WALL = 1;
 var ENEMY_BURSTER = 2;
 var globalPlayer, controls;
+var globalEffect;
 
 function StateGame () {
 	this._stateName = "StateGame";
@@ -133,7 +134,10 @@ StateGame.prototype.CreateObjectPool = function () {
 		BorrowCoin: function () {
 			if( this._coins.length === 0 ) {
 				var coinGeometry = new THREE.BoxGeometry( 2.5, 2.5, 2.5 );
-				var coinMat = new THREE.MeshPhongMaterial( { map: op._coinTexture, side: THREE.DoubleSide, transparent: true, overdraw: true } );
+				var coinMat = new THREE.MeshPhongMaterial( { map: op._coinTexture, 
+					side: THREE.DoubleSide, 
+					transparent: true, 
+					overdraw: true } );
 				var coinMesh = new THREE.Mesh( coinGeometry, coinMat );
 				coinGeometry.computeBoundingBox();
 				this._coins.push( coinMesh );
@@ -226,14 +230,18 @@ StateGame.prototype.CreateMap = function () {
 
 var collided = false;
 StateGame.prototype.CreateEffectPlane = function () {
-	var pos = globalPlayer.position;
+	var pos = camera.position;
+
+	var light = new THREE.PointLight( 0xFFFFFF, .3, 5 );
+	light.position.set( 0, 0, 0 );
+	camera.add( light );
 
 	var effect_texture = new THREE.ImageUtils.loadTexture( 'resources/textures/effect_hit.png' );
 	effect_texture.wrapS = THREE.RepeatWrapping;
 	effect_texture.wrapT = THREE.RepeatWrapping;
 	effect_texture.repeat.set( 1, 1 );
 
-	var effect_texture2 = new THREE.ImageUtils.loadTexture( 'resources/textures/floor_light.png' );
+	var effect_texture2 = new THREE.ImageUtils.loadTexture( 'resources/textures/icon_coin.png' );
 	effect_texture2.wrapS = THREE.RepeatWrapping;
 	effect_texture2.wrapT = THREE.RepeatWrapping;
 	effect_texture2.repeat.set( 1, 1 );
@@ -242,25 +250,62 @@ StateGame.prototype.CreateEffectPlane = function () {
 	var geoWidth = geoHeight * camera.aspect;
 
 	var geometry = new THREE.PlaneGeometry( geoHeight, geoWidth );
-	var material = new THREE.MeshPhongMaterial( {map:effect_texture, transparent: true, side: THREE.DoubleSide, opacity:0} );
+	var material = new THREE.MeshPhongMaterial( {map:effect_texture, transparent: true, side: THREE.DoubleSide, opacity:0, specular: 0xffffff} );
 	this._effect = new THREE.Mesh( geometry, material );
 	this._effect.effect_texture = effect_texture;
 	this._effect.effect_texture2 = effect_texture2;
 
 	this._effect.rotateZ(THREE.Math.degToRad(90));
-	this._effect.position.set(0,0,pos.z - 1.01);
+	this._effect.position.set(0,0,pos.z - 2.01);
+	globalEffect = this._effect;
 
 	this._effect.showEffect = function(effect, length){
 		/* effect
 		*	1. hit
 		*	2. coin
 		*/
-		this.material.map = effect_texture;
-		this.material.opacity = 0.9;
 
-		var tween = new TWEEN.Tween( this.material )
-			.to( { opacity: 0 }, length )
-			.start();
+		if(effect == "hit"){
+
+			console.log(this);
+			this.scale.x = 1;
+			this.scale.y = 1;
+
+			this.position.x = 0;
+			this.position.y = 0;
+			this.position.z = camera.position.z - 2.01;
+
+			this.rotation.y = 0;
+
+			this.material.map = effect_texture
+			this.material.opacity = 0.9;
+
+			var tween = new TWEEN.Tween( this.material )
+				.to( { opacity: 0 }, length )
+				.start();
+		}else if(effect == "coin"){
+			this.scale.x = 0.3;
+			this.scale.y = 0.3 / camera.aspect;
+
+			this.material.map = effect_texture2;
+			this.material.opacity = 1;
+
+			this.position.y = -0.5;
+			this.position.x = 0;
+			this.position.z = camera.position.z - 3;
+
+			this.rotation.y = 0;
+
+			var tween = new TWEEN.Tween( this.material )
+				.to( { 
+					opacity: 0,
+				 }, length )
+				.onUpdate(function(){
+					globalEffect.position.y += 0.01;
+					globalEffect.rotation.y += 0.3;
+				})
+				.start();
+		}
 	}
 
 	this._effect.shakeCamera = function(length){
@@ -505,6 +550,7 @@ StateGame.prototype.CollisionCheck = function () {
 		var boundingBox = item.geometry.boundingBox.clone();
 		boundingBox.translate( item.position );
 		if( playerBoundingBox.isIntersectionBox( boundingBox ) ) {
+			this._effect.showEffect('coin', 800);
 			item.OnCollide( item );
 			removeItemList.push( item );
 		}
