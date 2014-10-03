@@ -199,6 +199,9 @@ StateGame.prototype.CreatePlayer = function () {
 		};
 		window.addEventListener('deviceorientation', hasOrientation);
 	}
+	else {
+		this._player.rotation.y = Math.PI;
+	}
 }
 
 StateGame.prototype.CreateClimate = function () {
@@ -471,7 +474,7 @@ StateManager.prototype = {
 
 
 var scene, camera, clock, renderer;
-var stereoEffect, CardBoardSystemOn = true;
+var stereoEffect, CardBoardSystemOn = false;
 
 function Init () {
 	scene = new THREE.Scene();
