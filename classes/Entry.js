@@ -31,6 +31,9 @@ StateFirst.prototype = new State();
 StateFirst.prototype.OnEnter = function () {
 	State.prototype.OnEnter.call( this );
 
+	var ui_score = document.getElementById('score');
+	ui_score.innerHTML = '';
+
 	this.SetCamera();
 	this.CreateMap();
 }
@@ -713,6 +716,9 @@ StateResult.prototype = new State();
 
 StateResult.prototype.OnEnter = function () {
 	State.prototype.OnEnter.call( this );
+
+	var ui_score = document.getElementById('score');
+	ui_score.innerHTML = '';
 
 	camera = new THREE.PerspectiveCamera(
 		75, 
