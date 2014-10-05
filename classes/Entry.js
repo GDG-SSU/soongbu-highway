@@ -176,7 +176,11 @@ function StateGame () {
 	this._speedUpTimer = 0;
 
 	this._itemGenTimer = 0;
+	
 	this._genTimer = 0;
+	this._genTimeMax = 3.5;
+	this._genTimeMin = 1.5;
+
 	this._player = undefined;
 	this._effect = undefined;
 	this._liveTime = 0;
@@ -239,7 +243,7 @@ StateGame.prototype.Update = function (dt) {
 
 	// create enemy each time
 	this._genTimer += dt;
-	if( this._genTimer > 2.0 ) {
+	if( this._genTimer > this._genTimeMax ) {
 		this._genTimer = 0;
 
 		this.CreateEnemy();
