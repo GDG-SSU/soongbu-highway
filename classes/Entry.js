@@ -41,6 +41,10 @@ StateFirst.prototype.OnEnter = function () {
 StateFirst.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
 
+	if( controls !== undefined ) {
+		controls.update();
+	}
+
 	this.MoveCamera();
 }
 
@@ -50,11 +54,28 @@ StateFirst.prototype.SetCamera = function(){
 		window.innerWidth / window.innerHeight, 
 		1, 
 		1000);
-	console.log( camera );
 	var lookat = new THREE.Vector3( 0, -20, 22 );
 	camera.lookAt( lookat );
 	camera.position.set( 0, 10, 10 );
 	scene.add( camera );
+
+	if( CardBoardSystemOn ) {
+		var hasOrientation = function(evt) {
+			var absolute = evt.absolute;
+			var alpha	= evt.alpha;
+			var beta	= evt.beta;
+			var gamma	= evt.gamma;
+
+			if (!alpha) {
+				return;
+			}
+			window.removeEventListener('deviceorientation', hasOrientation);
+			controls = new THREE.DeviceOrientationControls( camera );
+			controls.connect();
+			camera.rotation.y = Math.PI;
+		};
+		window.addEventListener('deviceorientation', hasOrientation);
+	}
 }
 
 StateFirst.prototype.CreateMap = function () {
@@ -355,7 +376,6 @@ StateGame.prototype.CreateEffectPlane = function () {
 
 		if(effect == "hit"){
 
-			console.log(this);
 			this.scale.x = 1;
 			this.scale.y = 1;
 
