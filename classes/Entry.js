@@ -27,6 +27,7 @@ function StateFirst () {
 	this._stateName = "StateFirst";
 
 	this._mcamCounter = 0;
+	this._startMesh = undefined;
 }
 
 StateFirst.prototype = new State();
@@ -48,6 +49,10 @@ StateFirst.prototype.Update = function (dt) {
 		controls.update();
 	}
 
+	//this._startMesh.rotation.x += 0.1;
+	this._startMesh.rotation.y += 0.03;
+	this._startMesh.rotation.z += 0.03;
+
 	this.MoveCamera();
 }
 
@@ -57,10 +62,10 @@ StateFirst.prototype.SetCamera = function(){
 		window.innerWidth / window.innerHeight, 
 		1, 
 		1000);
+
 	var lookat = new THREE.Vector3( 0, -20, 22 );
 	camera.lookAt( lookat );
 	camera.position.set( 0, 10, 10 );
-	scene.add( camera );
 
 	if( CardBoardSystemOn ) {
 		var hasOrientation = function(evt) {
@@ -79,6 +84,8 @@ StateFirst.prototype.SetCamera = function(){
 		};
 		window.addEventListener('deviceorientation', hasOrientation);
 	}
+	
+	scene.add( camera );
 }
 
 StateFirst.prototype.CreateMap = function () {
@@ -126,8 +133,25 @@ StateFirst.prototype.CreateMap = function () {
 
 	title.position.set(0,0,-5);
 	//title.rotateY(THREE.Math.degToRad(180));
-
 	camera.add( title );
+
+	var startTexture = new THREE.ImageUtils.loadTexture( 'resources/textures/icon_start.png' );
+	var startGeometry = new THREE.BoxGeometry( 2, 2, 2 );
+	var startMaterial = new THREE.MeshPhongMaterial( { map: startTexture, side: THREE.DoubleSide } );
+	var startMesh = new THREE.Mesh( startGeometry, startMaterial );
+
+	startMesh.rotateZ(THREE.Math.degToRad(45));
+	startMesh.rotateX(THREE.Math.degToRad(45));
+	startMesh.rotateY(THREE.Math.degToRad(45));
+	startMesh.position.set(0,2,10);
+
+	var light = new THREE.PointLight( 0xFFFFFF, 1, 105 );
+	light.position.set( 0, 0, 0 );
+	camera.add( light );
+
+	this._startMesh = startMesh;
+
+	floor.add (startMesh);
 }
 
 StateFirst.prototype.MoveCamera = function(){
