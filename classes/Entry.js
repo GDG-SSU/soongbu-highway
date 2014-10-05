@@ -12,6 +12,9 @@ State.prototype = {
 
 	OnExit: function() {
 		scene.remove( this._root );
+		if( camera ) {
+			scene.remove( camera );
+		}
 	},
 
 	Update: function(dt) {
