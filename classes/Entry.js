@@ -167,19 +167,29 @@ var LINE_WIDTH = 10;
 var ENEMY_BLANK = 0;
 var ENEMY_WALL = 1;
 var ENEMY_BURSTER = 2;
+var ENEMY_DROP = 3;
 var globalPlayer, controls;
 var globalEffect;
 
 function StateGame () {
 	this._stateName = "StateGame";
+	this._runningSpeed = 1.5;
+	this._runningSpeedMax = 3;
+	this._life = 5;
 
-	this._speedUpTimer = 0;
+	this._levelTimer = 0;
+
+	this._enemyLevel = 0;
+	this._enemyLevelTimer = 0;
+	this._enemyLevelTimerMax = 20;
 
 	this._itemGenTimer = 0;
+	this._itemGenTimerUpper = 2;
+	this._itemGenTimerMin = 0.5;
 	
 	this._genTimer = 0;
-	this._genTimeMax = 3.5;
-	this._genTimeMin = 1.5;
+	this._genTimerUpper = 3.5;
+	this._genTimerMin = 1.5;
 
 	this._player = undefined;
 	this._effect = undefined;
@@ -222,9 +232,8 @@ StateGame.prototype.Update = function (dt) {
 
 
 	// move floor and adjust position of that
-	var speed = 50 * dt;
-	var dx = -1 * Math.sin(this._player.rotation.y) * speed;
-	var dz = -1 * Math.cos(this._player.rotation.y) * speed;
+	var dx = -1 * Math.sin(this._player.rotation.y) * this._runningSpeed;
+	var dz = -1 * Math.cos(this._player.rotation.y) * this._runningSpeed;
 	this._player.position.x += dx;
 	this._player.position.z += dz;
 	this._player.position.x = Math.min( LINE_WIDTH * 1.5, this._player.position.x );
@@ -235,24 +244,42 @@ StateGame.prototype.Update = function (dt) {
 	}
 
 	// leveling
-	this._speedUpTimer += dt;
-	if( this._speedUpTimer > 0.2 ) {
-		this._speedUpTimer = 0;
-		this._player._speed = Math.min( 60, this._player._speed * 1.001 );
+	this._levelTimer += dt;
+	if( this._levelTimer > 10.0 ){
+		this._levelTimer = 0;
+
+		//this._genTimeMax -= 0.5;
+		if(this._runningSpeed < this._runningSpeedMax){
+			this._runningSpeed += 0.03;
+		}
+
+		if(this._genTimerUpper > this._genTimerMin){
+			this._genTimerUpper -= 0.02;
+		}
+
+		if(this._itemGenTimerUpper > this._itemGenTimerMin){
+			this._itemGenTimerUpper -= 0.05;
+		}
+
 	}
 
 	// create enemy each time
 	this._genTimer += dt;
-	if( this._genTimer > this._genTimeMax ) {
+	if( this._genTimer > this._genTimerUpper ) {
 		this._genTimer = 0;
-
 		this.CreateEnemy();
 	}
 
 	this._itemGenTimer += dt;
-	if( this._itemGenTimer > 1.0 ) {
+	if( this._itemGenTimer > this._itemGenTimerUpper ) {
 		this._itemGenTimer = 0;
 		this.CreateItem();
+	}
+
+	this._enemyLevelTimer += dt;
+	if( this._enemyLevelTimer > this._enemyLevelTimerMax ){
+		this._enemyLevel ++;
+		this._enemyLevelTimer = 0;
 	}
 
 	this.CreateClimate();
@@ -270,8 +297,10 @@ StateGame.prototype.CreateObjectPool = function () {
 		_enemies: [],
 		_climates: [],
 		_coinTexture: new THREE.ImageUtils.loadTexture( 'resources/textures/coin.png' ),
+		_coinGoldTexture: new THREE.ImageUtils.loadTexture( 'resources/textures/coin_gold.png' ),
+		_enemyTexture: new THREE.ImageUtils.loadTexture( 'resources/textures/floor_light.png' ),
 
-		BorrowCoin: function () {
+		BorrowCoin: function (type) {
 			if( this._coins.length === 0 ) {
 				var coinGeometry = new THREE.BoxGeometry( 2.5, 2.5, 2.5 );
 				var coinMat = new THREE.MeshPhongMaterial( { map: op._coinTexture, 
@@ -286,6 +315,12 @@ StateGame.prototype.CreateObjectPool = function () {
 			var ret = this._coins[ this._coins.length - 1 ];
 			this._coins.pop();
 
+			var coinTexture = op._coinTexture;
+			if(type == "gold"){
+				coinTexture = op._coinGoldTexture;
+			}
+			ret.material.map = coinTexture;
+
 			return ret;
 		},
 		PayBackCoin: function (obj) {
@@ -294,8 +329,8 @@ StateGame.prototype.CreateObjectPool = function () {
 
 		BorrowEnemy: function () {
 			if( this._enemies.length === 0 ) {
-				var enemyGeometry = new THREE.BoxGeometry( LINE_WIDTH, 30, 1 );
-				var enemyMat = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
+				var enemyGeometry = new THREE.BoxGeometry( LINE_WIDTH, 30, 5 );
+				var enemyMat = new THREE.MeshLambertMaterial( { map: this._enemyTexture } );
 				var enemyMesh = new THREE.Mesh( enemyGeometry, enemyMat );
 				enemyGeometry.computeBoundingBox();
 
@@ -330,6 +365,9 @@ StateGame.prototype.CreateObjectPool = function () {
 	};
 
 	this._objectPool = op;
+	op._enemyTexture.wrapS = THREE.RepeatWrapping;
+	op._enemyTexture.wrapT = THREE.RepeatWrapping;
+	op._enemyTexture.repeat.set( 1, 2 );
 }
 
 StateGame.prototype.CreateMap = function () {
@@ -386,6 +424,11 @@ StateGame.prototype.CreateEffectPlane = function () {
 	effect_texture2.wrapT = THREE.RepeatWrapping;
 	effect_texture2.repeat.set( 1, 1 );
 
+	var effect_texture3 = new THREE.ImageUtils.loadTexture( 'resources/textures/icon_coin_gold.png' );
+	effect_texture3.wrapS = THREE.RepeatWrapping;
+	effect_texture3.wrapT = THREE.RepeatWrapping;
+	effect_texture3.repeat.set( 1, 1 );
+
 	var geoHeight = 1.6;
 	var geoWidth = geoHeight * camera.aspect;
 
@@ -399,7 +442,7 @@ StateGame.prototype.CreateEffectPlane = function () {
 	this._effect.position.set(0,0,pos.z - 2.01);
 	globalEffect = this._effect;
 
-	this._effect.showEffect = function(effect, length){
+	this._effect.showEffect = function(effect, length, etc){
 		/* effect
 		*	1. hit
 		*	2. coin
@@ -423,10 +466,13 @@ StateGame.prototype.CreateEffectPlane = function () {
 				.to( { opacity: 0 }, length )
 				.start();
 		}else if(effect == "coin"){
-			this.scale.x = 0.3;
-			this.scale.y = 0.3 / camera.aspect;
+			this.scale.x = 0.5;
+			this.scale.y = 0.5 / camera.aspect;
 
 			this.material.map = effect_texture2;
+			if(etc == "gold"){
+				this.material.map = effect_texture3;
+			}
 			this.material.opacity = 1;
 
 			this.position.y = -0.5;
@@ -528,28 +574,65 @@ StateGame.prototype.CreateEnemy = function () {
 	// make sure that create enemy each type
 	var lineArr = [ -1, -1, -1 ];
 	var type = lineArr.length - 1;
-	while (true) {
-		var line = THREE.Math.randInt( 0, 2 );
-		if( lineArr[line] === -1 ) {
-			lineArr[line] = type;
-			type--;
+
+	var lines = 1;
+	if(this._enemyLevel >= 3){
+		lines = 2;
+	}
+
+	var getEnemyType = function(level){
+		if(level <= 2){
+			return level + 1;
 		}
 
-		var count = 0;
-		for( var i = 0; i < lineArr.length; i ++ ) {
-			if( lineArr[i] === -1 ) {
-				count ++;
+		if(level > 3){
+			return THREE.Math.randInt(2,3);
+		}
+
+		return 1;
+		
+	}
+
+	for(var i = 0; i < lines; i++){
+		while(true){
+			var index = THREE.Math.randInt(0, 2);
+			if(lineArr[index] == -1){
+				var type = 1;
+				if(this._enemyLevel > 0 && this._enemyLevel < 5 && i == 0){
+					type = getEnemyType(this._enemyLevel);
+				}else if(this._enemyLevel >= 5 ){
+					type = getEnemyType(this._enemyLevel);
+				}
+				lineArr[index] = type;
+
+				break;
 			}
 		}
-
-		if( count === 0 ) {
-			break;
-		}
+		console.log(lineArr);
 	}
+
+	// while (true) {
+	// 	var line = THREE.Math.randInt( 0, 2 );
+	// 	if( lineArr[line] === -1 ) {
+	// 		lineArr[line] = type;
+	// 		type--;
+	// 	}
+
+	// 	var count = 0;
+	// 	for( var i = 0; i < lineArr.length; i ++ ) {
+	// 		if( lineArr[i] === -1 ) {
+	// 			count ++;
+	// 		}
+	// 	}
+
+	// 	if( count === 0 ) {
+	// 		break;
+	// 	}
+	// }
 
 	// now create enemy!
 	for( var i = 0; i < lineArr.length; i ++ ) {
-		if( lineArr[i] === 0 ) {
+		if( lineArr[i] === -1 ) {
 			continue;
 		}
 
@@ -560,11 +643,17 @@ StateGame.prototype.CreateEnemy = function () {
 		this._root.add( enemy );
 
 		if( lineArr[i] === ENEMY_BURSTER ) {
-			// below code should be changed.... in later....
-			enemy.position.y = -25;
+			enemy.position.y = 80;
+		}else if( lineArr[i] === ENEMY_DROP ){
+			enemy.position.y = -14.5;
+		}
+
+		if( lineArr[i] > 1 ){
 			enemy.Burst = function (enemy) {
+				console.log("BURST!!!");
+
 				var newPos = enemy.position.clone();
-				newPos.y += 40;
+				newPos.y = 15;
 
 				if( enemy.tween !== undefined ) {
 					enemy.tween.stop();
@@ -581,6 +670,10 @@ StateGame.prototype.CreateEnemy = function () {
 			enemy._bursted = false;
 		}
 
+		var light = new THREE.PointLight( 0xFFFFFF, 3, 15 );
+		light.position.set( 0, 0, -3 );
+		enemy.add( light );
+
 		this._enemies.push( enemy );
 	}
 }
@@ -593,13 +686,23 @@ StateGame.prototype.CreateItem = function () {
 			continue;
 		}
 
-		var item = this._objectPool.BorrowCoin();
+		var itemType = "silver";
+		if(THREE.Math.randInt(1,10) == 5){
+			itemType = "gold";
+		}
+
+		var item = this._objectPool.BorrowCoin(itemType);
 		if( item.tween !== undefined ) {
 			item.tween.stop();
 		}
+		item._itemType = itemType;
 
 		item.OnCollide = function (item) {
-			stateManager._curr._coinCount++;
+			var delCoin = 1;
+			if(item._itemType == "gold"){
+				delCoin = 3;
+			}
+			stateManager._curr._coinCount += delCoin;
 		}
 
 		item.position.set( (i - 1) * LINE_WIDTH, 3, this._player.position.z + 110 );
@@ -689,7 +792,7 @@ StateGame.prototype.CollisionCheck = function () {
 		var boundingBox = item.geometry.boundingBox.clone();
 		boundingBox.translate( item.position );
 		if( playerBoundingBox.isIntersectionBox( boundingBox ) ) {
-			this._effect.showEffect('coin', 800);
+			this._effect.showEffect('coin', 800, item._itemType);
 			item.OnCollide( item );
 			removeItemList.push( item );
 		}
@@ -712,15 +815,16 @@ StateGame.prototype.CollisionCheck = function () {
 		var boundingBox = enemy.geometry.boundingBox.clone();
 		boundingBox.translate( enemy.position );
 		if( playerBoundingBox.isIntersectionBox( boundingBox ) ) {
+			enemy.position.z -= 100;
 			this.GameOver();
-			return;
+			break;
 		}
 	};
 
 	for (var i = this._enemies.length - 1; i >= 0; i--) {
 		var enemy = this._enemies[i];
-		if( enemy._type === 2 && ! enemy._bursted ) {
-			if( enemy.position.z - this._player.position.z < 65 ) {
+		if( enemy._type >= 2 && ! enemy._bursted ) {
+			if( enemy.position.z - this._player.position.z < 85 + this._runningSpeed * 25 ) {
 				enemy.Burst( enemy );
 			}
 		}
@@ -752,8 +856,13 @@ StateGame.prototype.RemoveFarClimate = function () {
 
 StateGame.prototype.GameOver = function () {
 	// stateManager.SetState("StateFirst");
-	this._effect.showEffect('hit', 500);
+	this._effect.showEffect('hit', 500, "");
 	this._effect.shakeCamera(250);
+
+	this._life--;
+	if(this._life <= 0){
+		stateManager.SetState("StateResult");
+	}
 	console.log( 'game over' );
 }
 
@@ -970,7 +1079,7 @@ Init();
 
 var keyboard = new THREEx.KeyboardState();
 var stateManager = new StateManager();
-stateManager.SetState("StateFirst");
+stateManager.SetState("StateGame");
 
 var render = function () {
 	requestAnimationFrame(render);
