@@ -49,6 +49,11 @@ StateFirst.prototype.Update = function (dt) {
 		controls.update();
 	}
 
+	if( camera.rotation.x > -2.0 ) {
+		stateManager.SetState("StateGame");
+		return;
+	};
+
 	//this._startMesh.rotation.x += 0.1;
 	this._startMesh.rotation.y += 0.03;
 	this._startMesh.rotation.z += 0.03;
@@ -870,6 +875,7 @@ StateGame.prototype.GameOver = function () {
 
 function StateResult () {
 	this._stateName = "StateResult";
+	this._stateChangeTimer = 0;
 }
 
 StateResult.prototype = new State();
@@ -909,6 +915,11 @@ StateResult.prototype.OnEnter = function () {
 
 StateResult.prototype.Update = function (dt) {
 	State.prototype.Update.call(this, dt);
+
+	this._stateChangeTimer += dt;
+	if( this._stateChangeTimer > 5 ) {
+		stateManager.SetState("StateFirst");
+	}
 
 	this._floor.position.z -= 70 * dt;
 	if( this._floor.position.z < -100 ) {
@@ -1079,7 +1090,7 @@ Init();
 
 var keyboard = new THREEx.KeyboardState();
 var stateManager = new StateManager();
-stateManager.SetState("StateGame");
+stateManager.SetState("StateFirst");
 
 var render = function () {
 	requestAnimationFrame(render);
