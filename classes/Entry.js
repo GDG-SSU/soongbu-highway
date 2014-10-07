@@ -28,6 +28,7 @@ function StateFirst () {
 
 	this._mcamCounter = 0;
 	this._startMesh = undefined;
+	this._startDelay = 0;
 }
 
 StateFirst.prototype = new State();
@@ -49,7 +50,8 @@ StateFirst.prototype.Update = function (dt) {
 		controls.update();
 	}
 
-	if( camera.rotation.x > -2.0 ) {
+	this._startDelay += dt;
+	if( camera.rotation.x > -2.0 && this._startDelay > 2.0 ) {
 		stateManager.SetState("StateGame");
 		return;
 	};
