@@ -132,7 +132,7 @@ StateFirst.prototype.CreateMap = function () {
 	titleTexture.wrapS = THREE.RepeatWrapping;
 	titleTexture.wrapT = THREE.RepeatWrapping;
 	titleTexture.repeat.set( 1, 1 );
-	var geometry = new THREE.PlaneGeometry( 8, 8 );
+	var geometry = new THREE.PlaneGeometry( 8, 4 );
 	var material = new THREE.MeshBasicMaterial( {map: titleTexture, side: THREE.DoubleSide, transparent: true, overdraw: true} );
 	var title = new THREE.Mesh( geometry, material );
 
@@ -1019,6 +1019,23 @@ StateManager.prototype = {
 var scene, camera, clock, renderer;
 var stereoEffect, CardBoardSystemOn = true;
 
+
+function Resize () {
+	var width = window.innerWidth;
+	var height = window.innerHeight;
+
+	camera.aspect = width / height;
+	camera.updateProjectionMatrix();
+
+	if( renderer ) {
+		renderer.setSize(window.innerWidth, window.innerHeight);
+	}
+
+	if( effect ) {
+		renderer.setSize(window.innerWidth, window.innerHeight);
+	}
+}
+
 function Init () {
 	scene = new THREE.Scene();
 	camera = new THREE.PerspectiveCamera(
@@ -1031,7 +1048,7 @@ function Init () {
 
 	renderer = new THREE.WebGLRenderer({ antialiasing: true });
 	renderer.setClearColor( 0x000000, 1.0 ); // the default
-	renderer.setSize(window.innerWidth - 10, window.innerHeight);
+	renderer.setSize(window.innerWidth, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
 
 	effect = new THREE.StereoEffect(renderer);
@@ -1043,6 +1060,11 @@ function Init () {
 	scene.add( new THREE.AmbientLight( 0x222222 ) );
 
 	clock = new THREE.Clock();
+
+
+	//추가 : Resize 이벤트
+	window.addEventListener('resize', Resize, false);
+	setTimeout(Resize, 1);
 
 	enterFullscreen();
 }
