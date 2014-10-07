@@ -233,7 +233,7 @@ StateGame.prototype.Update = function (dt) {
 	this._liveTime += dt;
 	TotalScore = parseInt(this._liveTime) * 100 + this._coinCount * 200;
 	currScore += (TotalScore - currScore) / 10;
-	this._labelScore.innerHTML = "Score : " + parseInt(currScore + 1);
+	this._labelScore.innerHTML = "SCORE : " + parseInt(currScore + 1);
 
 
 	// move floor and adjust position of that
@@ -520,7 +520,7 @@ StateGame.prototype.CreateEffectPlane = function () {
 }
 
 StateGame.prototype.CreatePlayer = function () {
-	var geometry = new THREE.BoxGeometry( 2, 4, 4 );
+	var geometry = new THREE.BoxGeometry( 4, 4, 4 );
 	var material = new THREE.MeshLambertMaterial( { color: 0x00FF00, transparent: true, opacity: 0 } );
 	var mesh = new THREE.Mesh( geometry, material );
 	mesh.position.set( 0, 2, 0 );
@@ -1017,7 +1017,7 @@ StateManager.prototype = {
 
 
 var scene, camera, clock, renderer;
-var stereoEffect, CardBoardSystemOn = true;
+var stereoEffect, CardBoardSystemOn = false;
 
 
 function Resize () {
@@ -1032,8 +1032,12 @@ function Resize () {
 	}
 
 	if( effect ) {
-		renderer.setSize(window.innerWidth, window.innerHeight);
+		effect.setSize(window.innerWidth, window.innerHeight);
 	}
+
+	var div_score = document.getElementById('score');
+	div_score.style.marginLeft = "15%";
+	div_score.style.marginTop = "30%";
 }
 
 function Init () {
@@ -1064,7 +1068,7 @@ function Init () {
 
 	//추가 : Resize 이벤트
 	window.addEventListener('resize', Resize, false);
-	setTimeout(Resize, 1);
+	//setTimeout(Resize, 1);
 }
 
 console.log( window.innerWidth + " " + window.innerHeight );
@@ -1088,7 +1092,7 @@ Init();
 
 var keyboard = new THREEx.KeyboardState();
 var stateManager = new StateManager();
-stateManager.SetState("StateFirst");
+stateManager.SetState("StateGame");
 
 var render = function () {
 	requestAnimationFrame(render);

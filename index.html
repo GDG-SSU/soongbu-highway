@@ -21,16 +21,29 @@
 				color: #ffffff;
 			}
 
-			.left-top{
-				font-size: 25px;
-				margin-left: 200px;
-				margin-top: 300px;
+			#score{
+				width: 20%;
+
+				overflow: hidden;
+
+				padding: 8px;
+				margin-left: 15%;
+				margin-top: 40%;
+
+				text-align: center;
+				font-size: 18px;
+				font-weight: bolder;
+
+				border-radius: 10px;
+
+				color:#444444;
+				background-color: rgba(255,255,255,0.9);
 			}
 		</style>
 	</head>
 	<body>
 		<div class="container-full" id="screen">
-			<div id="score" class="left-top">
+			<div id="score">
 				Score : 100
 			</div>
 		</div>
@@ -41,7 +54,7 @@
                     rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen;
 
                 rfs.call(el);
-                location.reload();
+                //location.reload();
             });
         </script>
 		<script src="library/tween.js"></script>
