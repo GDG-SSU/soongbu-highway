@@ -38,6 +38,7 @@ StateFirst.prototype.OnEnter = function () {
 
 	var ui_score = document.getElementById('score');
 	ui_score.innerHTML = '';
+	ui_score.style.display = 'none';
 
 	this.SetCamera();
 	this.CreateMap();
@@ -50,8 +51,11 @@ StateFirst.prototype.Update = function (dt) {
 		controls.update();
 	}
 
+	//camera.rotation.x += 0.01;
+	console.log(camera.rotation.x + " : " + camera.rotation.y + " : " + camera.rotation.z);
+
 	this._startDelay += dt;
-	if( camera.rotation.x > -2.0 && this._startDelay > 2.0 ) {
+	if( Math.abs(Math.abs(camera.rotation.x) - 1.5) < 0.5 && this._startDelay > 2.0 ) {
 		stateManager.SetState("StateGame");
 		return;
 	};
@@ -220,6 +224,7 @@ StateGame.prototype.OnEnter = function () {
 
 	var ui_score = document.getElementById('score');
 	this._labelScore = ui_score;
+	ui_score.style.display = 'block';
 }
 
 var TotalScore = 0;
@@ -895,6 +900,7 @@ StateResult.prototype.OnEnter = function () {
 
 	var ui_score = document.getElementById('score');
 	ui_score.innerHTML = '';
+	ui_score.style.display = 'none';
 
 	camera = new THREE.PerspectiveCamera(
 		75, 
@@ -1027,7 +1033,7 @@ StateManager.prototype = {
 
 
 var scene, camera, clock, renderer;
-var stereoEffect, CardBoardSystemOn = false;
+var stereoEffect, CardBoardSystemOn = true;
 
 
 function Resize () {
@@ -1102,7 +1108,7 @@ Init();
 
 var keyboard = new THREEx.KeyboardState();
 var stateManager = new StateManager();
-stateManager.SetState("StateGame");
+stateManager.SetState("StateFirst");
 
 var render = function () {
 	requestAnimationFrame(render);
