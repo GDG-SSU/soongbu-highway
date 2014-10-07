@@ -1065,8 +1065,6 @@ function Init () {
 	//추가 : Resize 이벤트
 	window.addEventListener('resize', Resize, false);
 	setTimeout(Resize, 1);
-
-	enterFullscreen();
 }
 
 console.log( window.innerWidth + " " + window.innerHeight );
@@ -1081,28 +1079,6 @@ ProcessKeyInput = function (keyboard) {
 	}
 	else if( keyboard.pressed("2") ) {
 		stateManager.SetState("StateGame");
-	}
-}
-
-function onFullScreenEnter() {
-	elem.onwebkitfullscreenchange = onFullScreenExit;
-	elem.onmozfullscreenchange = onFullScreenExit;
-};
-
-function enterFullscreen() {
-	var elem = document.body;
-	elem.onwebkitfullscreenchange = onFullScreenEnter;
-	elem.onmozfullscreenchange = onFullScreenEnter;
-	elem.onfullscreenchange = onFullScreenEnter;
-	if (elem.webkitRequestFullscreen) {
-		elem.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
-	} 
-	else {
-		if (elem.mozRequestFullScreen) {
-			elem.mozRequestFullScreen();
-		} else {
-			elem.requestFullscreen();
-		}
 	}
 }
 
