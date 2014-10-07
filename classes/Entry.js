@@ -28,6 +28,7 @@ function StateFirst () {
 
 	this._mcamCounter = 0;
 	this._startMesh = undefined;
+	this._startDelay = 0;
 }
 
 StateFirst.prototype = new State();
@@ -49,7 +50,8 @@ StateFirst.prototype.Update = function (dt) {
 		controls.update();
 	}
 
-	if( camera.rotation.x > -2.0 ) {
+	this._startDelay += dt;
+	if( camera.rotation.x > -2.0 && this._startDelay > 2.0 ) {
 		stateManager.SetState("StateGame");
 		return;
 	};
@@ -467,9 +469,13 @@ StateGame.prototype.CreateEffectPlane = function () {
 			this.material.map = effect_texture
 			this.material.opacity = 0.9;
 
+			if( this.tween ) {
+				this.tween.stop();
+			}
 			var tween = new TWEEN.Tween( this.material )
 				.to( { opacity: 0 }, length )
 				.start();
+			this.tween = tween;
 		}else if(effect == "coin"){
 			this.scale.x = 0.5;
 			this.scale.y = 0.5 / camera.aspect;
@@ -486,6 +492,9 @@ StateGame.prototype.CreateEffectPlane = function () {
 
 			this.rotation.y = 0;
 
+			if( this.tween ) {
+				this.tween.stop();
+			}
 			var tween = new TWEEN.Tween( this.material )
 				.to( { 
 					opacity: 0,
@@ -495,6 +504,7 @@ StateGame.prototype.CreateEffectPlane = function () {
 					globalEffect.rotation.y += 0.3;
 				})
 				.start();
+			this.tween = tween;
 		}
 	}
 
