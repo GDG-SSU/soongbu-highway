@@ -529,6 +529,8 @@ StateGame.prototype.CreateEffectPlane = function () {
 				camera.position.y = 5;
 			})
 			.start();
+			
+			window.navigator.vibrate(300);
 	}
 	
 	camera.add(this._effect);
