@@ -1,0 +1,69 @@
+<html>
+	<head>
+        <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+		<title>My first Three.js app</title>
+		<style>
+			html, body{
+				margin: 0;
+				padding: 0;
+
+				height: 100%;
+			}
+
+			.container-full{
+				width: 100%;
+				height: 100%;
+
+				position: absolute;;
+				left: 0px;
+				top: 0px;
+
+				color: #ffffff;
+			}
+
+			#score{
+				width: 20%;
+
+				overflow: hidden;
+
+				padding: 8px;
+				margin-left: 15%;
+				margin-top: 40%;
+
+				text-align: center;
+				font-size: 18px;
+				font-weight: bolder;
+
+				border-radius: 10px;
+
+				color:#444444;
+				background-color: rgba(255,255,255,0.9);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container-full" id="screen">
+			<div id="score">
+				Score : 100
+			</div>
+		</div>
+
+        <script>
+            addEventListener("click", function() {
+                var el = document.documentElement,
+                    rfs = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen;
+
+                rfs.call(el);
+                //location.reload();
+            });
+        </script>
+		<script src="library/tween.js"></script>
+		<script src="library/three.js"></script>
+		<script src="library/StereoEffect.js"></script>
+		<script src="library/DeviceOrientationControls.js"></script>
+		<script src="library/KeyboardState.js"></script>
+		<script src="library/FullScreen.js"></script>
+		<script src="library/helvetiker_regular.typeface.js"></script>
+		<script data-main="classes/Entry" src="library/requirejs.js"></script>
+	</body>
+</html>
