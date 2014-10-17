@@ -186,7 +186,7 @@ function StateGame () {
 	this._stateName = "StateGame";
 	this._runningSpeed = 1.5;
 	this._runningSpeedMax = 3;
-	this._life = 5;
+	this._life = 1;
 
 	this._levelTimer = 0;
 
@@ -935,8 +935,8 @@ StateResult.prototype.OnEnter = function () {
 	var xml = null;
 
 	xmlHttp = new XMLHttpRequest();
-	xmlHttp.open("GET", "corikachu.myaxler.org/addScore", false);
-	xmlHttp.send(TotalScore);
+	xmlHttp.open("GET", "corikachu.myaxler.org/addScore/"+TotalScore, true);
+	xmlHttp.send();
 
 	return xmlHttp.responseText;
 }
