@@ -929,6 +929,16 @@ StateResult.prototype.OnEnter = function () {
 	labelMesh.position.set( 0, 10, 50 );
 	this._root.add( labelMesh );
 	this._scoreLabel = labelMesh;
+
+
+	//네트워크로 보내는...
+	var xml = null;
+
+	xmlHttp = new XMLHttpRequest();
+	xmlHttp.open("GET", "corikachu.myaxler.org/addScore", false);
+	xmlHttp.send(TotalScore);
+
+	return xmlHttp.responseText;
 }
 
 StateResult.prototype.Update = function (dt) {
