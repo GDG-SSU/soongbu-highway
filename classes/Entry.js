@@ -186,7 +186,7 @@ function StateGame () {
 	this._stateName = "StateGame";
 	this._runningSpeed = 1.5;
 	this._runningSpeedMax = 3;
-	this._life = 1;
+	this._life = 3;
 
 	this._levelTimer = 0;
 
@@ -883,6 +883,10 @@ StateGame.prototype.GameOver = function () {
 
 	this._life--;
 	if(this._life <= 0){
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.open("GET", "http://corikachu.myaxler.org/addScore/" + TotalScore, true);
+		xmlHttp.send();
+
 		stateManager.SetState("StateResult");
 	}
 	console.log( 'game over' );
